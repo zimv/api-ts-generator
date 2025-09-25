@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 import path, { dirname } from 'path';
 import os from 'os';
 import { start as downloadGitRepoStart, ParsedJsonFileInfo } from './downloadGitRepo';
-import { swaggerJsonToYApiData } from './swaggerJsonToYApiData';
+import { swaggerJsonToYApiData } from './server/swaggerJsonToYApiData';
 import GitRepoInfo from './GitRepoInfo';
 import * as conso from './console';
 import { dedent, isFunction, noop } from 'vtils';
@@ -22,7 +22,7 @@ import { exec } from 'child_process';
 import {
   getRequestDataJsonSchema,
   getResponseDataJsonSchema,
-  jsonSchemaToType,
+  jsonSchemaToTsCode,
   formatContent,
   topNotesContent
 } from './utils';
@@ -327,10 +327,10 @@ export class Generator {
     const requestDataJsonSchema = getRequestDataJsonSchema(extendedInterfaceInfo);
     // 入参
 
-    const requestDataType = await jsonSchemaToType(requestDataJsonSchema, requestDataTypeName);
+    const requestDataType = await jsonSchemaToTsCode(requestDataJsonSchema, requestDataTypeName);
     const responseDataJsonSchema = getResponseDataJsonSchema(extendedInterfaceInfo, syntheticalConfig.dataKey);
     // console.log(JSON.stringify(responseDataJsonSchema));
-    const responseDataType = await jsonSchemaToType(responseDataJsonSchema, responseDataTypeName);
+    const responseDataType = await jsonSchemaToTsCode(responseDataJsonSchema, responseDataTypeName);
     const isRequestDataOptional = /(\{\}|any)$/s.test(requestDataType);
     const requestHookName =
       syntheticalConfig.reactHooks && syntheticalConfig.reactHooks.enabled

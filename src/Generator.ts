@@ -24,12 +24,12 @@ import { exec } from 'child_process';
 import {
   getRequestDataJsonSchema,
   getResponseDataJsonSchema,
-  jsonSchemaToType,
+  jsonSchemaToTsCode,
   formatContent,
   topNotesContent,
   filterHandler
 } from './utils';
-import { SwaggerToYApiServer } from './SwaggerToYApiServer';
+import { SwaggerToYApiServer } from './server/SwaggerToYApiServer';
 import GenIndex from './genIndex';
 import { genJsonSchemeConstContent } from './responseDataJsonSchemaHandler';
 import { fetchInterfaceList, fetchProjectInfo, getProjectInfoAndInterfaces } from './requestYapiData';
@@ -190,6 +190,34 @@ export class Generator {
         categoryInterfaceList = pick(categoryInterfaceList, cids as readonly number[]) || {};
       }
 
+      // components tstype interface
+      const componentsCode: string[] = [];
+      await Promise.all(
+        Object.keys(projectInfo.components.schemas).map(async key => {
+          const code = await jsonSchemaToTsCode(
+            { ...projectInfo.components.schemas[key], components: projectInfo.components },
+            key
+          );
+          componentsCode.push(code);
+        })
+      );
+      const catOutputFilePath = getOutputFilePath(this.config, `/${projectInfo?._id}/${'components'}.ts`);
+      outputFileList['components'] = {
+        projectId: String(projectInfo?._id),
+        categoryId: 'components',
+        syntheticalConfig: this.config,
+        content: componentsCode,
+        outputResponseDataJsonSchemaFilePath: getOutputFilePath(
+          this.config,
+          `/${projectInfo?._id}/${'components'}responseDataJsonSchema.ts`
+        ),
+        responseDataJsonSchemaContent: ['categoryResponseDataJsonSchemaContent'],
+        requestFunctionFilePath: this.config.requestFunctionFilePath
+          ? path.resolve(this.options.cwd, this.config.requestFunctionFilePath)
+          : path.join(path.dirname(catOutputFilePath), 'request.ts'),
+        requestHookMakerFilePath: ''
+      };
+
       return Promise.all(
         Object.keys(categoryInterfaceList).map(async (catId: string, catIndex) => {
           const categoryConfig = categories?.filter(cat => String(cat.id) === catId)[0];
@@ -216,6 +244,7 @@ export class Generator {
           const categoryCode: string[] = [];
 
           const categoryResponseDataJsonSchemaContent: string[] = [];
+
           const interfaceCodes = await Promise.all(
             interfaceList.map<
               Promise<{
@@ -237,7 +266,8 @@ export class Generator {
               const { code, responseDataJsonSchema } = await this.generateInterfaceCode(
                 {
                   ...this.config,
-                  ...project
+                  ...project,
+                  components: projectInfo.components
                 },
                 interfaceInfo,
                 categoryUID
@@ -302,9 +332,10 @@ export class Generator {
     await GenRequest(config);
     // 生成入口 index.ts
     await GenIndex(config, CategoryList);
+    let outputContent = '';
 
     return Promise.all(
-      Object.keys(outputFileList).map(async outputFilePath => {
+      Object.keys(outputFileList).map(async (outputFilePath, index) => {
         let {
           content,
           requestFunctionFilePath,
@@ -319,18 +350,22 @@ export class Generator {
         requestFunctionFilePath = requestFunctionFilePath.replace(/\.js(x)?$/, '.ts$1');
         requestHookMakerFilePath = requestHookMakerFilePath.replace(/\.js(x)?$/, '.ts$1');
 
+        if (outputFilePath === 'components') {
+        }
         const topImportPkgTemplate = syntheticalConfig.topImportPkgTemplate || defaultTopImportPkgTemplate;
 
         // 始终写入主文件
         const rawOutputContent = dedent`
           ${topNotesContent()}
-          ${topImportPkgTemplate(config)}
+          ${outputFilePath === 'components' ? topImportPkgTemplate(config) : ''}
 
           ${content.join('\n\n').trim()}
         `;
 
-        const outputContent = formatContent(dedent`${rawOutputContent}`, config.prettierConfigPath);
-        await fs.outputFile(outputFilePath, outputContent);
+        outputContent += formatContent(dedent`${rawOutputContent}`, config.prettierConfigPath);
+        if (Object.keys(outputFileList).length - 1 === index) {
+          await fs.outputFile(outputFilePath, outputContent);
+        }
 
         // 如果要生成 JavaScript 代码，
         // 则先对主文件进行 tsc 编译，主文件引用到的其他文件也会被编译，
@@ -392,10 +427,22 @@ export class Generator {
     const requestDataJsonSchema = getRequestDataJsonSchema(extendedInterfaceInfo);
     // 入参
 
-    const requestDataType = await jsonSchemaToType(requestDataJsonSchema, requestDataTypeName);
+    const requestDataType = await jsonSchemaToTsCode(
+      { ...requestDataJsonSchema, components: syntheticalConfig.components },
+      requestDataTypeName
+    );
+    if(interfaceInfo.path.includes('/path')){
+      console.log(requestDataType);
+    }
     const responseDataJsonSchema = getResponseDataJsonSchema(extendedInterfaceInfo, syntheticalConfig.dataKey);
     // console.log(JSON.stringify(responseDataJsonSchema));
-    const responseDataType = await jsonSchemaToType(responseDataJsonSchema, responseDataTypeName);
+    const responseDataType = await jsonSchemaToTsCode(
+      { ...responseDataJsonSchema, components: syntheticalConfig.components },
+      responseDataTypeName
+    );
+    if(interfaceInfo.path.includes('/path')){
+      console.log(requestDataType);
+    }
     const isRequestDataOptional = /(\{\}|any)$/s.test(requestDataType);
     const requestHookName =
       syntheticalConfig.reactHooks && syntheticalConfig.reactHooks.enabled

@@ -39,6 +39,7 @@ export interface Project {
   token?: string;
   /** 项目下分类列表 */
   cat: Category[];
+  components?: object[];
 }
 
 /** 接口定义 */

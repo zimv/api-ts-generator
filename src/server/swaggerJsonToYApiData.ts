@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import swagger from 'swagger-client';
-import { Category, Interface, Project } from './types';
+import { Category, Interface, Project } from '../types';
 import { each, find } from 'vtils';
 import { OpenAPIV2 as SwaggerType } from 'openapi-types';
 
@@ -18,7 +18,7 @@ function handlePath(path: string) {
   return path;
 }
 
-function openapi2swagger(data) {
+function openapi3Format(data) {
   data.swagger = '2.0';
   each(data.paths, apis => {
     each(apis, api => {
@@ -62,10 +62,13 @@ function openapi2swagger(data) {
   return data;
 }
 
-async function handleSwaggerData(res) {
+async function openapi2ToSwaggerData(openapiData) {
+  return openapiData;
   return new Promise(resolve => {
     const data = swagger({
-      spec: res
+      spec: openapiData,
+      // 不解析$ref为properties，保持引用关系
+      useCircularStructures: true,
     });
 
     data.then(res => {
@@ -74,7 +77,7 @@ async function handleSwaggerData(res) {
   });
 }
 
-async function run(
+async function parseOpenapi(
   res
 ): Promise<{ apis: Interface[]; cats: Category[]; basePath: string; swaggerData: SwaggerType.Document }> {
   const interfaceData = { apis: [], cats: [], basePath: '', swaggerData: {} };
@@ -88,9 +91,9 @@ async function run(
 
   isOAS3 = res.openapi && String(res.openapi).startsWith('3.');
   if (isOAS3) {
-    res = openapi2swagger(res);
+    res = openapi3Format(res);
   }
-  res = await handleSwaggerData(res);
+  res = await openapi2ToSwaggerData(res);
   SwaggerData = res;
   interfaceData.swaggerData = SwaggerData;
 
@@ -325,12 +328,19 @@ function handleResponse(api) {
   return res_body;
 }
 
+/**
+ *
+ * @param data
+ * @description data is openapiV3 json
+ * @returns
+ */
 export async function swaggerJsonToYApiData(data: any): Promise<{
   project: Project;
   cats: Category[];
   interfaces: Interface[];
 }> {
-  const yapiData = await run(data);
+  // import {mockData} from './mockData';
+  const yapiData = await parseOpenapi(data);
 
   // 兼容没有分类的情况
   if (!yapiData.cats.length) {
@@ -352,6 +362,7 @@ export async function swaggerJsonToYApiData(data: any): Promise<{
     desc: yapiData.swaggerData.info.description || '',
     basepath: yapiData.swaggerData.basePath || '',
     tag: [],
+    components: yapiData.swaggerData.components || {},
     env: [
       {
         name: 'local',

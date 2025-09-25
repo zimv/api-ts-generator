@@ -19,30 +19,36 @@ import { yapiUrlParser } from '../src/yapiUrlAnalysis';
 import { Config, ProjectConfig } from '../src/types';
 
 const config = defineConfig([
+  // {
+  //   serverType: 'yapi',
+  //   serverUrl: '',
+  //   projects: [
+  //     {
+  //       // projectId: 279,
+  //       token: '',
+  //       categories: [
+  //         {
+  //           id: 83,
+  //           filter: path => !!path.match('/dtx-prescription-interface/prescription/v1/create')
+  //         },
+  //         {
+  //           id: 5873
+  //         }
+  //       ]
+  //     }
+  //   ],
+  //   outputFilePath: 'src/api'
+  // },
   {
-    serverType: 'yapi',
-    serverUrl: '',
-    projects: [
-      {
-        // projectId: 279,
-        token: '',
-        categories: [
-          {
-            id: 83,
-            filter: path => !!path.match('/dtx-prescription-interface/prescription/v1/create')
-          },
-          {
-            id: 5873
-          }
-        ]
-      }
-    ],
+    serverType: 'swagger',
+    serverUrl: 'http://127.0.0.1:3030/api-json',
     outputFilePath: 'src/api'
   }
 ]);
 
 async function dodo() {
-  const res = await yapiUrlParser(config[2]);
+  console.log(config)
+  const res = await yapiUrlParser(config[0]);
   fs.writeJSONSync('./projects.json', res);
   const projects = res.projects as ProjectConfig[];
   console.log(projects);

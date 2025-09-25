@@ -1,0 +1,12 @@
+{
+    "serverType": "swagger",
+    "serverUrl": "http://127.0.0.1:3030/api-json",
+    "typesOnly": false,
+    "target": "typescript",
+    "prodEnvName": "local",
+    "outputFilePath": "src/api",
+    "dataKey": "data",
+    "jsonSchema": {
+        "enabled": false
+    }
+}

@@ -1,4 +1,5 @@
 import JSON5 from 'json5';
+import { upperFirst } from 'lodash';
 import Mock from 'mockjs';
 import path from 'path';
 import toJsonSchema from 'to-json-schema';
@@ -60,6 +61,7 @@ export function getNormalizedRelativePath(from: string, to: string) {
  * @returns 处理后的 JSONSchema
  */
 export function processJsonSchema<T extends JSONSchema4>(jsonSchema: T): T {
+  return jsonSchema;
   /* istanbul ignore if */
   if (!isObject(jsonSchema)) return jsonSchema;
 
@@ -72,11 +74,11 @@ export function processJsonSchema<T extends JSONSchema4>(jsonSchema: T): T {
   delete jsonSchema.maxItems;
 
   // 将 additionalProperties 设为 false
-  jsonSchema.additionalProperties = false;
+  // jsonSchema.additionalProperties = false;
 
   // 删除通过 swagger 导入时未剔除的 ref
-  delete jsonSchema.$ref;
-  delete jsonSchema.$$ref;
+  // delete jsonSchema.$ref;
+  // delete jsonSchema.$$ref;
 
   // 删除 default，防止 json-schema-to-typescript 根据它推测类型
   delete jsonSchema.default;
@@ -262,7 +264,9 @@ export function JSTTOptions(): Partial<Options> {
  * @param typeName 类型名称
  * @returns TypeScript 类型定义
  */
-export async function jsonSchemaToType(jsonSchema: JSONSchema4, typeName: string): Promise<string> {
+export async function jsonSchemaToTsCode(jsonSchema: JSONSchema4, typeName: string): Promise<string> {
+  // 那么统一命名为大写开头，那么就可以避免compile导致的名称不一致
+  typeName = upperFirst(typeName);
   if (isEmpty(jsonSchema)) {
     return `export interface ${typeName} {}`;
   }
@@ -270,9 +274,111 @@ export async function jsonSchemaToType(jsonSchema: JSONSchema4, typeName: string
     delete jsonSchema.__is_any__;
     return `export type ${typeName} = any`;
   }
-  // JSTT 会转换 typeName，因此传入一个全大写的假 typeName，生成代码后再替换回真正的 typeName
+
+  function rewriteRefs(obj: any) {
+    for (const key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        if (key === '$ref' && typeof obj[key] === 'string') {
+          const refValue = obj[key];
+          // 匹配指向 components.schemas 的引用
+          if (refValue.startsWith('#/components/schemas/')) {
+            const interfaceName = refValue.replace('#/components/schemas/', '');
+            /**
+             * /components/schemas下的文件会被我们生成 文件名 命名的 ts interface，
+             * 这里使用tsType标记后，compiler会根据这个标记来生成对应的ts interface引用
+             * 但是有个问题compile会把tsType，第一个字母变成大写，如果schemas下的文件名为小写开头，那么最终
+             * 生成出来的引用interface的名称对不上，例如
+             * interface user {}
+             * interface ABC {
+             *   user: User;
+             * }
+             * 那么统一命名为大写开头，那么就可以避免compile导致的名称不一致
+             */
+            obj['tsType'] = upperFirst(interfaceName);
+            /**
+             * 如果输入的对象除了$ref存在，并且还存在其他属性，那么需要用这些属性创建一个ts对象。常见的用例是，url中的/{id}路径参数
+             * 输出：UpdateVideoCollectionDto & { id: 'string' }
+             */
+            if (obj.properties) {
+              const propertiesTsObject = {};
+              Object.keys(obj.properties).forEach(key => {
+                propertiesTsObject[`${key}${obj.required.includes(key) ? '' : '?'}`] =
+                  obj.properties[key].tsType || obj.properties[key].type;
+              });
+              obj['tsType'] += ` & ${JSON.stringify(propertiesTsObject)}`;
+            }
+            delete obj['$ref'];
+          }
+        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+          // 递归遍历对象
+          rewriteRefs(obj[key]);
+        }
+      }
+    }
+  }
+
+  rewriteRefs(jsonSchema);
+
+  // 检测是否为数组类型，如果是，为数组元素类型添加Item后缀
+  // if (jsonSchema.type === 'array' && jsonSchema.items) {
+  //   // 为数组元素类型添加Item后缀
+  //   const itemTypeName = `${typeName}Item`;
+  //   // 如果items是对象，为其添加tsType属性
+  //   if (typeof jsonSchema.items === 'object') {
+  //     // (jsonSchema.items as any).tsType = itemTypeName;
+  //     delete jsonSchema.items.$ref;
+  //   }
+  // }
+  /**
+   * json-schema-to-typescript 会转换 typeName，因此传入一个全大写的假 typeName，生成代码后再替换回真正的 typeName
+   * 这样还能避免如下的问题，如果下面compile传入typeName，那么replies会被json-schema-to-typescript的generateName判断重复，从而被+1的修改名称
+   * export interface WorkComment {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  work: Work;
+  workId: string;
+  userId: string;
+  parent?: Email;
+  parentId?: string;
+  replies: WorkComment1[];
+  user: User;
+} */
   const fakeTypeName = 'THISISAFAKETYPENAME';
-  const code = await compile(jsonSchema, fakeTypeName, JSTTOptions());
+
+  const code = await compile(jsonSchema, fakeTypeName, {
+    bannerComment: '',
+    additionalProperties: false,
+    declareExternallyReferenced: false
+    // style: getPrettier(),
+    // customName:(...rest) => {
+    //   console.log(rest)
+    //   if(rest[0].tsType==='WorkComment'){
+    //     return 'WorkComment'+Math.random().toString()
+    //   }
+    //   return undefined
+    // },
+  });
+  if (typeName === 'ListFilePathsResDto') {
+    console.log(jsonSchema);
+  }
+  if (typeName === 'GetAwsS3FilesFileIdPathResponse') {
+    console.log(jsonSchema);
+  }
+  if (typeName === 'PatchVideoCollectionsIdRequest') {
+    console.log(jsonSchema);
+  }
+  if (typeName === 'PatchPermissionsPermissionIdRequest') {
+    /**
+     * export type PatchPermissionsPermissionIdRequest = {
+  permissionId: number;
+} & string;这个& string的问题和req_body_other有关，todo 后续再看
+     */
+    console.log(jsonSchema);
+  }
+  
+
   delete jsonSchema.id;
   return code.replace(fakeTypeName, typeName).trim();
 }
