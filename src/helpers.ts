@@ -1,10 +1,5 @@
 import type { AppendOptions } from 'form-data';
 import type { Config, RequestConfig, RequestFunctionParams } from './types';
-import { checkCookie } from './cookie';
-import { spinnerInstance } from './spinner';
-import { login, loginPrompts } from './requestYapiData';
-import SimpleGit from 'simple-git';
-import { gitRepoCheckTmpPath } from './constants';
 import fs from 'fs-extra';
 import * as conso from './console';
 
@@ -17,7 +12,6 @@ export function defineConfig(config: Partial<Config> | Partial<Config>[]): Confi
   const configs = config instanceof Array ? config : [config];
   const final: Config[] = configs.map(item => {
     return {
-      serverType: 'yapi',
       serverUrl: '',
       typesOnly: false,
       target: 'typescript',
@@ -227,58 +221,3 @@ export const autoAsyncSplitQueue = async <T = any>(fns: (() => Promise<T>)[], li
   return result.flat();
 };
 
-/**
- * 提前准备yapi的登录环境
- * @param configs
- */
-export const prepareYapiLogin = async (configs: Config[]) => {
-  const needLoginYapis = configs.filter(item => {
-    if (item.serverType === 'yapi') {
-      // 如果存在没有token的yapi配置,则需要登录
-      if (item.projects instanceof Array) {
-        return item.projects.some(i => !i.token);
-      }
-      return !item.projects || !item.projects?.token;
-    }
-
-    return false;
-  });
-  if (needLoginYapis.length) {
-    // 如果有token，则忽略cookie鉴权
-    await asyncFnArrayOrderRun(
-      needLoginYapis.map(item => {
-        return async () => {
-          if (!(await checkCookie(item.serverUrl))) {
-            spinnerInstance.clear();
-            const info = await loginPrompts(item.serverUrl);
-            spinnerInstance.start();
-            await login(info, item);
-          }
-        };
-      })
-    );
-  }
-};
-
-/**
- *确保有git-repo仓库的权限
- * @param configs
- */
-export const prepareGitRepoLogin = async (configs: Config[]) => {
-  await fs.ensureDir(gitRepoCheckTmpPath);
-  const gitInstance = SimpleGit(gitRepoCheckTmpPath);
-  const gitrepoList = configs.filter(item => item.serverType === 'git-repo');
-  if (gitrepoList.length) {
-    await asyncFnArrayOrderRun(
-      gitrepoList.map(i => {
-        return async () => {
-          await fs.emptyDir(gitRepoCheckTmpPath);
-          await gitInstance.clone(i.gitRepoSettings?.repository || '').catch(e => {
-            conso.error(`${i.gitRepoSettings?.repository}: 请确保项目存在并拥护权限`);
-            process.exit();
-          });
-        };
-      })
-    );
-  }
-};

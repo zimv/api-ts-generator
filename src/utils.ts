@@ -361,13 +361,13 @@ export async function jsonSchemaToTsCode(jsonSchema: JSONSchema4, typeName: stri
     // },
   });
   if (typeName === 'ListFilePathsResDto') {
-    console.log(jsonSchema);
+    // console.log(jsonSchema);
   }
   if (typeName === 'GetAwsS3FilesFileIdPathResponse') {
-    console.log(jsonSchema);
+    // console.log(jsonSchema);
   }
   if (typeName === 'PatchVideoCollectionsIdRequest') {
-    console.log(jsonSchema);
+    // console.log(jsonSchema);
   }
   if (typeName === 'PatchPermissionsPermissionIdRequest') {
     /**
@@ -375,7 +375,7 @@ export async function jsonSchemaToTsCode(jsonSchema: JSONSchema4, typeName: stri
   permissionId: number;
 } & string;这个& string的问题和req_body_other有关，todo 后续再看
      */
-    console.log(jsonSchema);
+    // console.log(jsonSchema);
   }
   
 

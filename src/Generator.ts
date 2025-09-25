@@ -134,13 +134,11 @@ export class Generator {
   }
 
   async prepare(): Promise<void> {
-    if (this.config.serverType === 'swagger') {
-      const swaggerToYApiServer = new SwaggerToYApiServer({
-        swaggerJsonUrl: this.config.serverUrl
-      });
-      this.config.serverUrl = await swaggerToYApiServer.start();
-      this.disposes.push(() => swaggerToYApiServer.stop());
-    }
+    const swaggerToYApiServer = new SwaggerToYApiServer({
+      swaggerJsonUrl: this.config.serverUrl
+    });
+    this.config.serverUrl = await swaggerToYApiServer.start();
+    this.disposes.push(() => swaggerToYApiServer.stop());
     if (this.config.serverUrl) {
       // 去除地址后面的 /
       this.config.serverUrl = this.config.serverUrl.replace(/\/+$/, '');
@@ -154,7 +152,7 @@ export class Generator {
   async generate(): Promise<OutputFileList> {
     const outputFileList: OutputFileList = Object.create(null);
 
-    const { projects, serverUrl, serverType, preproccessInterface, outputFilePath, filter } = this.config;
+    const { projects, serverUrl, preproccessInterface, outputFilePath, filter } = this.config;
     const projectArray = castArray(projects);
 
     const projectArrayRender = projectArray.map(async (project, projectIndex) => {
@@ -431,7 +429,7 @@ export class Generator {
       { ...requestDataJsonSchema, components: syntheticalConfig.components },
       requestDataTypeName
     );
-    if(interfaceInfo.path.includes('/path')){
+    if (interfaceInfo.path.includes('/path')) {
       console.log(requestDataType);
     }
     const responseDataJsonSchema = getResponseDataJsonSchema(extendedInterfaceInfo, syntheticalConfig.dataKey);
@@ -440,7 +438,7 @@ export class Generator {
       { ...responseDataJsonSchema, components: syntheticalConfig.components },
       responseDataTypeName
     );
-    if(interfaceInfo.path.includes('/path')){
+    if (interfaceInfo.path.includes('/path')) {
       console.log(requestDataType);
     }
     const isRequestDataOptional = /(\{\}|any)$/s.test(requestDataType);
@@ -475,13 +473,9 @@ export class Generator {
       } = {
         ...syntheticalConfig.comment,
         // Swagger 时总是禁用标签、更新时间、链接
-        ...(syntheticalConfig.serverType === 'swagger'
-          ? {
-              tag: false,
-              updateTime: false,
-              link: false
-            }
-          : {})
+        tag: false,
+        updateTime: false,
+        link: false
       } as CommentConfig;
       if (!isEnabled) {
         return '';

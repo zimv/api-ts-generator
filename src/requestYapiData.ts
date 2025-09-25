@@ -5,11 +5,9 @@ import got, { Options } from 'got';
 import { CategoryList, Category, Project, SyntheticalConfig, Interface, BaseInterfaceInfo } from './types';
 import prompts from 'prompts';
 import { isEmpty, omit, castArray } from 'vtils';
-import { cookieJar, checkCookie } from './cookie';
 import {
   DefaultServerUrl,
   ResponseErrorCode,
-  yapiApiLogin,
   yapiApiGetProject,
   yapiApiExport,
   yapiApiGetMenu,
@@ -34,7 +32,6 @@ type ApiConfig = SyntheticalConfig & {
 };
 
 const client = got.extend({
-  cookieJar,
   responseType: 'json',
   https: {
     rejectUnauthorized: false
@@ -90,31 +87,7 @@ export type LoginResponseData = {
   uid: number;
   username: string;
 };
-/**
- * 登录
- * @param data
- * @param config
- * @returns
- */
-export const login = async function (data: LoginProps, config?: SyntheticalConfig) {
-  const { serverUrl = DefaultServerUrl } = config || {};
-  const url = `${serverUrl}${yapiApiLogin}`;
-  const res = await client<ResponseData<LoginResponseData>>(url, { method: 'post', json: data }).catch(errmsg => {
-    conso.error(errmsg || '登录失败');
-    process.exit();
-  });
 
-  // 设置Cookie
-  const cookie = cookieJar.getCookieStringSync(url);
-  if (cookie) cookieJar.setCookie(cookie, serverUrl);
-
-  const { body } = res;
-  if (body && body.errcode) {
-    conso.error(body.errmsg || '登录失败');
-    process.exit(0);
-  }
-  return body.data || body;
-};
 
 type FetchApiData = {
   token?: string;
@@ -128,15 +101,8 @@ type FetchApiData = {
  * @returns
  */
 export const fetchApi = async function <T>(path: string, data: FetchApiData, config?: ApiConfig) {
-  const { serverUrl = DefaultServerUrl, serverType, errorExit = true } = config || {};
-  // 如果有token，则忽略cookie鉴权
-  if (serverType === 'yapi' && !config?.token && !(await checkCookie(serverUrl))) {
-    spinnerInstance.stop();
-    conso.log(data);
-    const info = await loginPrompts(serverUrl);
-    spinnerInstance.start();
-    await login(info);
-  }
+  const { serverUrl = DefaultServerUrl, errorExit = true } = config || {};
+  
   const method = config?.method || 'get';
   const url = path.startsWith('http') ? path : `${serverUrl}${path}`;
   const params = { ...data };
@@ -202,11 +168,6 @@ export const fetchProjectById = async (config: ApiConfig) => {
   const basePath = `/${projectInfo.basepath || '/'}`.replace(/\/+$/, '').replace(/^\/+/, '/');
   projectInfo.basepath = basePath;
 
-  // 顺便获取项目token
-  if (!config.token && config.serverType === 'yapi' && projectInfo._id) {
-    const token = await fetchToken(projectInfo._id, config);
-    projectInfo.token = token;
-  }
   return projectInfo;
 };
 

@@ -8,15 +8,13 @@ import yargs from 'yargs';
 import { Config } from './types';
 import { dedent } from 'vtils';
 import { Generator } from './Generator';
-import { Generator as GitRepoGenertor } from './GitRepoGenerator';
 import yargsParser from 'yargs-parser';
 import chalk from 'chalk';
 import * as conso from './console';
 import { formatContent } from './utils';
 import { prepareIndexFile } from './genIndex';
 import { spinnerInstance } from './spinner';
-import { asyncFnArrayOrderRun, prepareYapiLogin } from './helpers';
-import { yapiUrlParser } from './yapiUrlAnalysis';
+import { asyncFnArrayOrderRun } from './helpers';
 
 TSNode.register({
   // 不加载本地的 tsconfig.json
@@ -74,59 +72,15 @@ export async function genConfig() {
     if (!answers.override) return;
   }
 
-  const serverTypeAnswers = await prompt({
-    message: '选择获取接口信息的类型',
-    name: 'serverType',
-    type: 'select',
-    choices: [
-      { title: 'Yapi', value: 'yapi' },
-      { title: 'GitRepo', value: 'git-repo' },
-      { title: 'Swagger', value: 'swagger' }
-    ]
-  });
-  let yapiAnswers;
-  if (serverTypeAnswers.serverType === 'yapi') {
-    yapiAnswers = await prompt([
-      {
-        message: `yapi项目token`,
-        name: 'token',
-        type: 'text',
-        initial: ''
-      },
-      {
-        message: '接口信息服务地址',
-        name: 'url',
-        type: 'text'
-      }
-    ]);
-  }
   let swaggerAnswers;
-  if (serverTypeAnswers.serverType === 'swagger') {
-    swaggerAnswers = await prompt([
-      {
-        message: '接口信息服务地址',
-        name: 'url',
-        type: 'text',
-        initial: ''
-      }
-    ]);
-  }
-  let gitRepoAnswers;
-  if (serverTypeAnswers.serverType === 'git-repo') {
-    gitRepoAnswers = await prompt([
-      {
-        message: '仓库地址(SSH协议)',
-        name: 'repository',
-        type: 'text'
-      },
-      {
-        message: '使用的分支名',
-        name: 'branch',
-        type: 'text',
-        initial: 'master'
-      }
-    ]);
-  }
+  swaggerAnswers = await prompt([
+    {
+      message: '接口信息服务地址',
+      name: 'url',
+      type: 'text',
+      initial: ''
+    }
+  ]);
 
   await fs.outputFile(
     configTSFile,
@@ -134,27 +88,7 @@ export async function genConfig() {
       import { defineConfig } from 'api-ts-generator'
 
       export default defineConfig([{
-        serverType: '${serverTypeAnswers.serverType}',
-        ${
-          serverTypeAnswers.serverType !== 'git-repo'
-            ? `serverUrl: '${yapiAnswers?.url || swaggerAnswers?.url || ''}',`
-            : ''
-        }
-        ${
-          serverTypeAnswers.serverType === 'yapi'
-            ? `projects: [{
-          token: '${yapiAnswers?.token}' // yapi项目的token
-        }],`
-            : ''
-        }
-        ${
-          serverTypeAnswers.serverType === 'git-repo'
-            ? `gitRepoSettings: {
-            repository: '${gitRepoAnswers?.repository || ''}',
-            branch: '${gitRepoAnswers?.branch || ''}'
-          },`
-            : ''
-        }
+        serverUrl: '${swaggerAnswers?.url || ''}',
         outputFilePath: 'src/api'
       }])
     `)
@@ -165,55 +99,27 @@ export async function genConfig() {
 async function dodo(config: Config, cwd: string, index = 0) {
   const { outputFilePath } = config;
 
-  const { serverType, gitRepoSettings } = config;
-  if (serverType === 'git-repo' && GitRepoGenertor.configValidator(config)) {
-    const label = chalk.green(`${gitRepoSettings?.repository}耗时`);
-    console.time(label);
-    spinnerInstance.start();
-    const gitRepoGenertorInstance = new GitRepoGenertor(config, { cwd });
-    const output = await gitRepoGenertorInstance.generate();
-    await gitRepoGenertorInstance.write(output);
-    const outTips = Object.keys(output).length
-      ? `${serverType}模式代码生成成功，文件路径：${outputFilePath}`
-      : `未找到需要更新的接口`;
-    spinnerInstance.clear();
-    conso.log(chalk.yellowBright(`\n${index + 1}.-------------------------------`));
-    conso.success(outTips);
-    console.timeEnd(label);
-    conso.log(chalk.yellowBright('---------------------------------\n'));
-    // spinnerInstance.render();
-  } else {
-    const label = chalk.green(`${config.serverUrl}耗时`);
-    console.time(label);
-    let projects = config.projects;
-    if (serverType === 'yapi' && config.yapiUrlList?.length) {
-      const res = await yapiUrlParser(config);
-      if (res.parseResultList?.length) {
-        spinnerInstance.clear();
-        conso.info(`Url解析结果:`);
-        conso.table(res.parseResultList);
-      }
-      projects = res.projects;
-    }
-    spinnerInstance.start();
-    const generator = new Generator(
-      {
-        ...config,
-        projects
-      },
-      { cwd }
-    );
-    await generator.prepare();
-    const output = await generator.generate();
-    await generator.write(output);
-    spinnerInstance.clear();
-    conso.log(chalk.yellowBright(`\n${index + 1}.-------------------------`));
-    conso.success(`${serverType}模式代码生成成功，文件路径：${outputFilePath}`);
-    console.timeEnd(label);
-    conso.log(chalk.yellowBright('---------------------------\n'));
-    // spinnerInstance.render();
-    await generator.destroy();
-  }
+  const label = chalk.green(`${config.serverUrl}耗时`);
+  console.time(label);
+  let projects = config.projects;
+  spinnerInstance.start();
+  const generator = new Generator(
+    {
+      ...config,
+      projects
+    },
+    { cwd }
+  );
+  await generator.prepare();
+  const output = await generator.generate();
+  await generator.write(output);
+  spinnerInstance.clear();
+  conso.log(chalk.yellowBright(`\n${index + 1}.-------------------------`));
+  conso.success(`代码生成成功，文件路径：${outputFilePath}`);
+  console.timeEnd(label);
+  conso.log(chalk.yellowBright('---------------------------\n'));
+  // spinnerInstance.render();
+  await generator.destroy();
 
   return true;
 }
@@ -230,9 +136,6 @@ export async function start() {
   let generator: Generator | undefined;
   try {
     const config: Config[] = require(configFile).default;
-
-    await prepareYapiLogin(config);
-    // await prepareGitRepoLogin(config);
 
     spinnerInstance.start('正在获取数据并生成代码... \n');
     await asyncFnArrayOrderRun(

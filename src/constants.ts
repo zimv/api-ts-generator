@@ -7,8 +7,6 @@ export enum ResponseErrorCode {
   UnLogin = 40011
 }
 
-/** yapi登录接口path */
-export const yapiApiLogin = '/api/user/login';
 /** 获取菜单列表 */
 export const yapiApiGetMenu = '/api/interface/getCatMenu';
 /** 获取项目基本信息 */
@@ -26,5 +24,3 @@ export const yapiApiExport = '/api/plugin/export';
 /** 获取项目token */
 export const yapiApiToken = '/api/project/token';
 
-/** 用于检查是否拥有git权限 */
-export const gitRepoCheckTmpPath = '/tmp/gitRepoCheck';

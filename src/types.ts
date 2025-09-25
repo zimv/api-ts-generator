@@ -646,49 +646,6 @@ export type ProjectConfig = SharedConfig &
     categories?: CategoryConfig[];
   };
 
-export interface DownloadGitRepoSettings {
-  /**
-   * 仓库地址
-   */
-  repository: string;
-  /**
-   * 分支名
-   * @default master
-   */
-  branch?: string;
-  /**
-   * 下载目录
-   *
-   * @default /tmp
-   */
-  dest?: string;
-  /**
-   * 全量更新
-   * @default false
-   * @description 全量更新，忽略git change
-   *
-   * @deprecated 暂时取消局部对比更新，强制全量更新
-   *
-   * 仓库模式下，工具会记录每次生成代码时仓库的commitId，通过对比commit之间的文件变化来实现局部更新
-   */
-  forceUpdate?: boolean;
-  /**
-   * 筛选
-   */
-  filter?: ((path: string) => boolean) | RegExp | string[];
-  /**
-   * 设置接口的baseURL
-   *
-   * @description 若要配置使用运行时代码，则增加`[code]:`前缀
-   ```
-   例：
-    baseURL: "[code]:process.env.BASE_URL"  => baseURL:process.env.BASE_URL
-
-    baseURL: "process.env.BASE_URL" => baseURL:"process.env.BASE_URL"
-   ```
-   */
-  baseURL?: ((path: string) => string | undefined) | string;
-}
 
 /**
  * 服务器的配置。
@@ -699,18 +656,6 @@ export interface ServerConfig extends SharedConfig, GenTemplateType {
    *
    */
   serverUrl: string;
-
-  /**
-   * 服务类型。
-   *
-   * @default 'yapi'
-   */
-  serverType?: 'yapi' | 'swagger' | 'git-repo';
-
-  /**
-   * 仓库设置
-   */
-  gitRepoSettings?: DownloadGitRepoSettings;
 
   /**
    * 项目列表。
