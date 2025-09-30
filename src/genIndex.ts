@@ -11,7 +11,7 @@ import { getOutputFilePath } from './getOutputPath';
 import { formatContent, topNotesContent } from './utils';
 import * as conso from './console';
 
-/** 提前准备好index文件 */
+/** 提前准备好'src/api/index.ts'文件 */
 export async function prepareIndexFile(config: Config) {
   const indexFilePath = getOutputFilePath(config, 'index.ts');
   if (!(await fs.pathExists(indexFilePath))) {
@@ -19,7 +19,7 @@ export async function prepareIndexFile(config: Config) {
   }
 }
 
-export default async (config: Config, categoryList: { categoryId: string; projectId: string }[]) => {
+export default async (config: Config, categoryList: { projectId: string }[]) => {
   const { prettierConfigPath } = config;
   const indexFilePath = getOutputFilePath(config, 'index.ts');
   let originFileContent = '';
@@ -28,10 +28,10 @@ export default async (config: Config, categoryList: { categoryId: string; projec
     originFileContent = fs.readFileSync(indexFilePath, { encoding: 'utf-8' });
   }
 
-  const exportAllInterface = categoryList.reduce((list, { categoryId, projectId }, index) => {
+  const exportAllInterface = categoryList.reduce((list, { projectId }, index) => {
     // return `export * from  "./${projectId}/${categoryId}"`;
-    if (originFileContent.indexOf(`${projectId}/${categoryId}`) === -1) {
-      list.push(`export * from  "./${projectId}/${categoryId}"`);
+    if (originFileContent.indexOf(`${projectId}`) === -1) {
+      list.push(`export * from  "./${projectId}"`);
     }
     return list;
   }, [] as string[]);

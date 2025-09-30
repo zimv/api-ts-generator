@@ -660,7 +660,7 @@ export interface ServerConfig extends SharedConfig, GenTemplateType {
   /**
    * 项目列表。
    */
-  projects?: ProjectConfig | ProjectConfig[];
+  project?: ProjectConfig;
   /**
    * prettier代码格式化配置文件的路径
    *

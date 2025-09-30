@@ -7,7 +7,7 @@ import prompt from 'prompts';
 import yargs from 'yargs';
 import { Config } from './types';
 import { dedent } from 'vtils';
-import { Generator } from './Generator';
+import { Generator } from './GeneratorNew';
 import yargsParser from 'yargs-parser';
 import chalk from 'chalk';
 import * as conso from './console';
@@ -96,21 +96,14 @@ export async function genConfig() {
   conso.success('写入配置文件完毕');
 }
 
-async function dodo(config: Config, cwd: string, index = 0) {
+async function startGenerate(config: Config, cwd: string, index = 0) {
   const { outputFilePath } = config;
 
   const label = chalk.green(`${config.serverUrl}耗时`);
   console.time(label);
-  let projects = config.projects;
   spinnerInstance.start();
-  const generator = new Generator(
-    {
-      ...config,
-      projects
-    },
-    { cwd }
-  );
-  await generator.prepare();
+  const generator = new Generator(config, { cwd });
+  // await generator.prepare();// todo去掉
   const output = await generator.generate();
   await generator.write(output);
   spinnerInstance.clear();
@@ -133,7 +126,6 @@ export async function start() {
     return conso.error(`未发现配置文件: ${configFile}`);
   }
   conso.tips(`发现配置文件: ${configFile}`);
-  let generator: Generator | undefined;
   try {
     const config: Config[] = require(configFile).default;
 
@@ -142,14 +134,14 @@ export async function start() {
       config.map((configItem, index) => {
         return async () => {
           await prepareIndexFile(configItem);
-          await dodo(configItem, cwd, index);
+          configItem.configIndex = index;
+          await startGenerate(configItem, cwd, index);
         };
       })
     );
     spinnerInstance.stop();
   } catch (err) {
     spinnerInstance.stop();
-    if (generator) await generator?.destroy();
     /* istanbul ignore next */
     return conso.error(err);
   }
