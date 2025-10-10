@@ -257,6 +257,34 @@ export function JSTTOptions(): Partial<Options> {
   };
 }
 
+// 预处理函数，处理空enum和其他边界情况
+export function preprocessSchema(schema: JSONSchema4): JSONSchema4 {
+  if (!isObject(schema)) {
+    return schema;
+  }
+
+  if (Array.isArray(schema)) {
+    return schema.map(preprocessSchema);
+  }
+
+  const processed = { ...schema };
+
+  // 处理空enum
+  if (processed.enum && Array.isArray(processed.enum) && processed.enum.length === 0) {
+    delete processed.enum;
+    // console.warn('Removed empty enum array from schema');
+  }
+
+  // 递归处理所有属性
+  for (const key in processed) {
+    if (processed.hasOwnProperty(key)) {
+      processed[key] = preprocessSchema(processed[key]);
+    }
+  }
+
+  return processed;
+}
+
 /**
  * 根据 JSONSchema 对象生产 TypeScript 类型定义。
  *
@@ -265,6 +293,7 @@ export function JSTTOptions(): Partial<Options> {
  * @returns TypeScript 类型定义
  */
 export async function jsonSchemaToTsCode(jsonSchema: JSONSchema4, typeName: string): Promise<string> {
+  jsonSchema = preprocessSchema(jsonSchema);
   // 那么统一命名为大写开头，那么就可以避免compile导致的名称不一致
   typeName = upperFirst(typeName);
   if (isEmpty(jsonSchema)) {
@@ -279,7 +308,11 @@ export async function jsonSchemaToTsCode(jsonSchema: JSONSchema4, typeName: stri
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         if (key === '$ref' && typeof obj[key] === 'string') {
-          const refValue = obj[key];
+          let refValue = obj[key];
+          // '#/components'是标准路径，但是仍然有些不标准的数据源为'#components'
+          if (refValue.startsWith('#components')) {
+            refValue = refValue.replace('#components', '#/components');
+          }
           // 匹配指向 components.schemas 的引用
           if (refValue.startsWith('#/components/schemas/')) {
             const interfaceName = refValue.replace('#/components/schemas/', '');
@@ -377,7 +410,6 @@ export async function jsonSchemaToTsCode(jsonSchema: JSONSchema4, typeName: stri
      */
     // console.log(jsonSchema);
   }
-  
 
   delete jsonSchema.id;
   return code.replace(fakeTypeName, typeName).trim();

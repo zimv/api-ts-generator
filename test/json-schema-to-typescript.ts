@@ -1,5 +1,6 @@
 import { compile } from 'json-schema-to-typescript';
 import { JSONSchema4 } from 'json-schema';
+import { preprocessSchema } from '../src/utils';
 
 const jsonSchema: JSONSchema4 = {
   type: 'object',
@@ -18,11 +19,17 @@ const jsonSchema: JSONSchema4 = {
     },
     test: {
       tsType: 'InterfaceAAA'
+    },
+    enumEmptyTest: {
+      "type": "number",
+      "enum": [],
     }
   }
 };
 
 const fakeTypeName = 'THISISAFAKETYPENAME';
-compile(jsonSchema, fakeTypeName).then(res => {
+// 预处理schema后再编译
+const processedSchema = preprocessSchema(jsonSchema);
+compile(processedSchema, fakeTypeName).then(res => {
   console.log(res);
 });

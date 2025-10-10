@@ -142,8 +142,16 @@ export async function start() {
     spinnerInstance.stop();
   } catch (err) {
     spinnerInstance.stop();
-    /* istanbul ignore next */
-    return conso.error(err);
+    console.error('\n❌ 执行过程中发生错误:');
+    console.error('错误信息:', err.message || err);
+    if (err.stack) {
+      console.error('错误堆栈:');
+      console.error(err.stack);
+    }
+    if (err.cause) {
+      console.error('错误原因:', err.cause);
+    }
+    return conso.error('代码生成失败，请查看上方错误信息');
   }
 
   console.timeEnd(timeLabel);
