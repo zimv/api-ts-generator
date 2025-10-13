@@ -335,8 +335,6 @@ function handleResponse(api) {
  * @returns
  */
 export async function swaggerJsonToYApiData(data: any): Promise<{
-  project: Project;
-  cats: Category[];
   interfaces: Interface[];
 }> {
   // import {mockData} from './mockData';
@@ -356,20 +354,7 @@ export async function swaggerJsonToYApiData(data: any): Promise<{
   }
 
   const currentTime = dayjs().unix();
-  const project: Project = {
-    _id: 0,
-    name: yapiData.swaggerData.info.title,
-    desc: yapiData.swaggerData.info.description || '',
-    basepath: yapiData.swaggerData.basePath || '',
-    tag: [],
-    components: yapiData.swaggerData.components || {},
-    env: [
-      {
-        name: 'local',
-        domain: `${yapiData.swaggerData.schemes?.[0] || 'http'}://${yapiData.swaggerData.host || '127.0.0.1'}`
-      }
-    ]
-  } as Project;
+
   const cats = yapiData.cats.map<Category>((cat, index) => {
     return {
       _id: index + 1,
@@ -389,5 +374,5 @@ export async function swaggerJsonToYApiData(data: any): Promise<{
     up_time: currentTime
   }));
 
-  return { project, cats, interfaces };
+  return { interfaces };
 }

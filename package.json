@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "build": "father build",
-    "gen": "rm -rf ./src/api & tsx test/gen.ts --type-check false gen",
+    "gen": "rm -rf ./api & tsx test/gen.ts --type-check false gen",
     "init": "tsx watch test/gen.ts --type-check false init",
     "publishOnly": "npm run build",
     "release": "npm run build && standard-version && git push --follow-tags origin master && npm publish",

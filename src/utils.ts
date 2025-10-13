@@ -8,7 +8,6 @@ import { compile, Options } from 'json-schema-to-typescript';
 import { Defined } from 'vtils/types';
 import { FileData } from './helpers';
 import prettier from 'prettier';
-import dayjs from 'dayjs';
 import {
   Interface,
   PropDefinition,
@@ -103,6 +102,7 @@ export function processJsonSchema<T extends JSONSchema4>(jsonSchema: T): T {
 
   // Mock.toJSONSchema 产生的 properties 为数组，然而 JSONSchema4 的 properties 为对象
   if (isArray(jsonSchema.properties)) {
+    // @ts-ignore
     jsonSchema.properties = (jsonSchema.properties as JSONSchema4[]).reduce<Defined<JSONSchema4['properties']>>(
       (props, js) => {
         props[js.name] = js;
@@ -250,12 +250,6 @@ export function getPrettier(filePath?: string): prettier.Options {
       };
 }
 
-export function JSTTOptions(): Partial<Options> {
-  return {
-    bannerComment: '',
-    style: getPrettier()
-  };
-}
 
 // 预处理函数，处理空enum和其他边界情况
 export function preprocessSchema(schema: JSONSchema4): JSONSchema4 {

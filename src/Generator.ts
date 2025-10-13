@@ -32,7 +32,6 @@ import {
   topNotesContent,
   filterHandler
 } from './utils';
-import { SwaggerToYApiServer } from './server/SwaggerToYApiServer';
 import GenIndex from './genIndex';
 import { genJsonSchemeConstContent } from './responseDataJsonSchemaHandler';
 import { fetchInterfaceList, fetchProjectInfo, getProjectInfoAndInterfaces } from './requestYapiData';
@@ -134,18 +133,6 @@ export class Generator {
   constructor(config: Config, private options: GeneratorOptions = { cwd: process.cwd() }) {
     // config 可能是对象或数组，统一为数组
     this.config = config;
-  }
-
-  async prepare(): Promise<void> {
-    const swaggerToYApiServer = new SwaggerToYApiServer({
-      swaggerJsonUrl: this.config.serverUrl
-    });
-    this.config.serverUrl = await swaggerToYApiServer.start();
-    this.disposes.push(() => swaggerToYApiServer.stop());
-    if (this.config.serverUrl) {
-      // 去除地址后面的 /
-      this.config.serverUrl = this.config.serverUrl.replace(/\/+$/, '');
-    }
   }
 
   async getOpenApiV3Json(url: string): Promise<OpenAPIV3.Document> {

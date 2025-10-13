@@ -1,5 +1,6 @@
 export * from 'json-schema';
 import { JSONSchema4 } from 'json-schema';
+import { OpenAPIV2, OpenAPIV3 } from 'openapi-types';
 import { LiteralUnion, OmitStrict } from 'vtils/types';
 import { ParsedPath } from 'path';
 
@@ -651,7 +652,7 @@ export type ProjectConfig = SharedConfig &
  * 服务器的配置。
  */
 export interface ServerConfig extends SharedConfig, GenTemplateType {
-
+  name?: string;
   configIndex?: number;
   /**
    * 服务地址。若服务类型为 `yapi`，此处填其首页地址；若服务类型为 `swagger`，此处填其 json 地址。
@@ -726,6 +727,7 @@ export type SyntheticalConfig = Partial<
       mockUrl: string;
       devUrl: string;
       prodUrl: string;
+      components: OpenAPIV3.Document['components'];
     }
 >;
 

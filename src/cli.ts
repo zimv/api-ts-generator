@@ -103,7 +103,6 @@ async function startGenerate(config: Config, cwd: string, index = 0) {
   console.time(label);
   spinnerInstance.start();
   const generator = new Generator(config, { cwd });
-  // await generator.prepare();// todo去掉
   const output = await generator.generate();
   await generator.write(output);
   spinnerInstance.clear();
