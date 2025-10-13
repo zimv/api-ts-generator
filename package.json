@@ -1,7 +1,7 @@
 {
-  "name": "api-ts-generator",
-  "version": "2.0.0",
-  "author": "huzhongchun <huzhongchun001@qq.com>",
+  "name": "open-api-typescript-request-generator",
+  "version": "0.0.1",
+  "author": "zimv <zimudashiren@163.com>",
   "main": "./lib/index.js",
   "module": "./es/index.js",
   "bin": {

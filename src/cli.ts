@@ -7,7 +7,7 @@ import prompt from 'prompts';
 import yargs from 'yargs';
 import { Config } from './types';
 import { dedent } from 'vtils';
-import { Generator } from './GeneratorNew';
+import { Generator } from './Generator';
 import yargsParser from 'yargs-parser';
 import chalk from 'chalk';
 import * as conso from './console';

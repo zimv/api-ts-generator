@@ -4,6 +4,9 @@ import fs from 'fs-extra';
 import path, { dirname } from 'path';
 import * as conso from './console';
 import _ from 'lodash';
+import got from 'got';
+import { OpenAPIV2, OpenAPIV3 } from 'openapi-types';
+import { swaggerJsonToYApiData } from './server/swaggerJsonToYApiData';
 import os from 'os';
 import { castArray, cloneDeepFast, dedent, isEmpty, isFunction, noop, pick } from 'vtils';
 import {
@@ -145,6 +148,13 @@ export class Generator {
     }
   }
 
+  async getOpenApiV3Json(url: string): Promise<OpenAPIV3.Document> {
+    const res = await got.get<OpenAPIV3.Document>(url, {
+      responseType: 'json'
+    });
+    return res.body;
+  }
+
   /**
    * 生成代码
    * @returns
@@ -152,160 +162,64 @@ export class Generator {
   async generate(): Promise<OutputFileList> {
     const outputFileList: OutputFileList = Object.create(null);
 
-    const { projects, serverUrl, preproccessInterface, outputFilePath, filter } = this.config;
-    const projectArray = castArray(projects);
+    const { project, serverUrl, preproccessInterface, outputFilePath, filter, configIndex, name } = this.config;
+    const typesName = name || '_types_' + (configIndex + 1);
+    const openApiV3Json = await this.getOpenApiV3Json(serverUrl);
 
-    const projectArrayRender = projectArray.map(async (project, projectIndex) => {
-      // const projectInfo = await fetchProjectInfo({
-      //   ...this.config,
-      //   ...project
-      // });
+    // components tstype interface
+    const componentsCode: string[] = [];
+    await Promise.all(
+      Object.keys(openApiV3Json.components.schemas).map(async key => {
+        const code = await jsonSchemaToTsCode(
+          { ...openApiV3Json.components.schemas[key], components: openApiV3Json.components },
+          key
+        );
+        componentsCode.push(code);
+      })
+    );
 
-      // // 所有接口列表
-      // const allInterfaceList = await fetchInterfaceList({
-      //   ...this.config,
-      //   ...project
-      // });
+    // 接口列表
+    const allApi = await swaggerJsonToYApiData(openApiV3Json);
 
-      const { projectInfo, allInterfaceList } = await getProjectInfoAndInterfaces({
-        ...this.config,
-        ...project
-      });
+    let interfaceList = allApi.interfaces;
 
-      // spinnerInstance.stop();
+    const categoryCode: string[] = [...componentsCode];
 
-      // 按分类分组
-      let categoryInterfaceList: Record<number | string, InterfaceList> = {};
+    const categoryResponseDataJsonSchemaContent: string[] = [];
 
-      allInterfaceList.forEach((item, index) => {
-        const catId = item._id;
-        categoryInterfaceList[catId] = item.list || [];
-      });
-
-      const { categories = [] } = project || {};
-      if (categories && categories.length) {
-        const cids = categories.map(item => item.id);
-        categoryInterfaceList = pick(categoryInterfaceList, cids as readonly number[]) || {};
-      }
-
-      // components tstype interface
-      const componentsCode: string[] = [];
-      await Promise.all(
-        Object.keys(projectInfo.components.schemas).map(async key => {
-          const code = await jsonSchemaToTsCode(
-            { ...projectInfo.components.schemas[key], components: projectInfo.components },
-            key
-          );
-          componentsCode.push(code);
-        })
+    for (let interfaceInfo of interfaceList) {
+      const { code, responseDataJsonSchema } = await this.generateInterfaceCode(
+        {
+          ...this.config,
+          ...project,
+          components: openApiV3Json.components
+        },
+        interfaceInfo
       );
-      const catOutputFilePath = getOutputFilePath(this.config, `/${projectInfo?._id}/${'components'}.ts`);
-      outputFileList['components'] = {
-        projectId: String(projectInfo?._id),
-        categoryId: 'components',
+      categoryCode.push(code);
+      categoryResponseDataJsonSchemaContent.push(responseDataJsonSchema);
+    }
+
+    const catOutputFilePath = getOutputFilePath(this.config, `/${typesName}.ts`);
+
+    if (categoryCode.length > 0) {
+      outputFileList[catOutputFilePath] = {
+        projectId: typesName,
+        categoryId: typesName,
         syntheticalConfig: this.config,
-        content: componentsCode,
+        content: categoryCode,
         outputResponseDataJsonSchemaFilePath: getOutputFilePath(
           this.config,
-          `/${projectInfo?._id}/${'components'}responseDataJsonSchema.ts`
+          `/${typesName}/responseDataJsonSchema.ts`
         ),
-        responseDataJsonSchemaContent: ['categoryResponseDataJsonSchemaContent'],
+        responseDataJsonSchemaContent: categoryResponseDataJsonSchemaContent,
         requestFunctionFilePath: this.config.requestFunctionFilePath
           ? path.resolve(this.options.cwd, this.config.requestFunctionFilePath)
           : path.join(path.dirname(catOutputFilePath), 'request.ts'),
         requestHookMakerFilePath: ''
       };
+    }
 
-      return Promise.all(
-        Object.keys(categoryInterfaceList).map(async (catId: string, catIndex) => {
-          const categoryConfig = categories?.filter(cat => String(cat.id) === catId)[0];
-          // 接口列表
-          let interfaceList = categoryInterfaceList[catId];
-          interfaceList = interfaceList
-            .map(interfaceInfo => {
-              const { path, _id } = interfaceInfo;
-              const interfaceFilter = categoryConfig?.filter || filter;
-              if (!filterHandler(interfaceFilter)(path, _id)) {
-                return false;
-              }
-              // 实现 _project 字段
-              // interfaceInfo._project = omit(projectInfo, ['cats', 'getMockUrl', 'getDevUrl', 'getProdUrl']);
-              // 预处理
-              const _interfaceInfo = isFunction(preproccessInterface)
-                ? preproccessInterface(cloneDeepFast(interfaceInfo), changeCase)
-                : interfaceInfo;
-
-              return _interfaceInfo;
-            })
-            .filter(Boolean) as any;
-
-          const categoryCode: string[] = [];
-
-          const categoryResponseDataJsonSchemaContent: string[] = [];
-
-          const interfaceCodes = await Promise.all(
-            interfaceList.map<
-              Promise<{
-                categoryUID: string;
-                outputFilePath: string;
-                weights: number[];
-                code: string;
-                responseDataJsonSchema: string;
-              }>
-            >(async interfaceInfo => {
-              const finalOutputFilePath = path.resolve(
-                this.options.cwd,
-                // typeof syntheticalConfig.outputFilePath === 'function'
-                //   ? syntheticalConfig.outputFilePath(interfaceInfo, changeCase)
-                //   : syntheticalConfig.outputFilePath!
-                outputFilePath!
-              );
-              const categoryUID = `${projectIndex}_${catId}_${catIndex}`;
-              const { code, responseDataJsonSchema } = await this.generateInterfaceCode(
-                {
-                  ...this.config,
-                  ...project,
-                  components: projectInfo.components
-                },
-                interfaceInfo,
-                categoryUID
-              );
-              const weights: number[] = [Number(catId), catIndex];
-              categoryCode.push(code);
-              categoryResponseDataJsonSchemaContent.push(responseDataJsonSchema);
-              return {
-                categoryUID,
-                outputFilePath: finalOutputFilePath,
-                weights,
-                code,
-                responseDataJsonSchema
-              };
-            })
-          );
-
-          const catOutputFilePath = getOutputFilePath(this.config, `/${projectInfo?._id}/${catId}.ts`);
-
-          if (categoryCode.length > 0) {
-            outputFileList[catOutputFilePath] = {
-              projectId: String(projectInfo?._id),
-              categoryId: catId,
-              syntheticalConfig: this.config,
-              content: categoryCode,
-              outputResponseDataJsonSchemaFilePath: getOutputFilePath(
-                this.config,
-                `/${projectInfo?._id}/${catId}responseDataJsonSchema.ts`
-              ),
-              responseDataJsonSchemaContent: categoryResponseDataJsonSchemaContent,
-              requestFunctionFilePath: this.config.requestFunctionFilePath
-                ? path.resolve(this.options.cwd, this.config.requestFunctionFilePath)
-                : path.join(path.dirname(catOutputFilePath), 'request.ts'),
-              requestHookMakerFilePath: ''
-            };
-          }
-        })
-      );
-    });
-    await Promise.all(projectArrayRender);
     return outputFileList;
   }
 
@@ -316,11 +230,11 @@ export class Generator {
    */
   async write(outputFileList: OutputFileList) {
     const JsonSchemaContentList: string[] = [];
-    const CategoryList: { categoryId: string; projectId: string }[] = [];
+    const projects: { projectId: string }[] = [];
     Object.keys(outputFileList).forEach(filePath => {
       const item = outputFileList[filePath];
       JsonSchemaContentList.push(item.responseDataJsonSchemaContent.join('\n'));
-      CategoryList.push(pick(item, ['categoryId', 'projectId']));
+      projects.push({ projectId: item.projectId });
     });
     const config = this.config || ({} as Config);
     // config.getRequestFunctionName;
@@ -329,7 +243,7 @@ export class Generator {
     // 生成 request.ts
     await GenRequest(config);
     // 生成入口 index.ts
-    await GenIndex(config, CategoryList);
+    await GenIndex(config, projects);
     let outputContent = '';
 
     return Promise.all(
@@ -348,14 +262,12 @@ export class Generator {
         requestFunctionFilePath = requestFunctionFilePath.replace(/\.js(x)?$/, '.ts$1');
         requestHookMakerFilePath = requestHookMakerFilePath.replace(/\.js(x)?$/, '.ts$1');
 
-        if (outputFilePath === 'components') {
-        }
         const topImportPkgTemplate = syntheticalConfig.topImportPkgTemplate || defaultTopImportPkgTemplate;
 
         // 始终写入主文件
         const rawOutputContent = dedent`
           ${topNotesContent()}
-          ${outputFilePath === 'components' ? topImportPkgTemplate(config) : ''}
+          ${topImportPkgTemplate(config)}
 
           ${content.join('\n\n').trim()}
         `;
@@ -406,7 +318,7 @@ export class Generator {
   }
 
   /** 生成接口代码 */
-  async generateInterfaceCode(syntheticalConfig: SyntheticalConfig, interfaceInfo: Interface, categoryUID: string) {
+  async generateInterfaceCode(syntheticalConfig: SyntheticalConfig, interfaceInfo: Interface) {
     const extendedInterfaceInfo: ExtendedInterface = {
       ...interfaceInfo,
       parsedPath: path.parse(interfaceInfo.path)
@@ -492,12 +404,12 @@ export class Generator {
             value: string | string[];
           }
       > = [
-        hasCategory && {
-          label: '分类',
-          value: hasLink
-            ? `[${extendedInterfaceInfo._category.name}↗](${syntheticalConfig.serverUrl}/project/${extendedInterfaceInfo.project_id}/interface/api/cat_${extendedInterfaceInfo.catid})`
-            : extendedInterfaceInfo._category.name
-        },
+        // hasCategory && {
+        //   label: '分类',
+        //   value: hasLink
+        //     ? `[${extendedInterfaceInfo._category.name}↗](${syntheticalConfig.serverUrl}/project/${extendedInterfaceInfo.project_id}/interface/api/cat_${extendedInterfaceInfo.catid})`
+        //     : extendedInterfaceInfo._category.name
+        // },
         hasTag && {
           label: '标签',
           value: extendedInterfaceInfo.tag.map(tag => `\`${tag}\``)
