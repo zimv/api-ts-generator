@@ -35,12 +35,12 @@ export default async (config: Config) => {
 
   // 自定义response拦截器，
   // 注意：如果修改接口正常返回的结构，对应的response声明需要修改
-  instance.interceptors.response.use((r) => {
-    const { data, status } = r;
-    if (status>=200 && status<300) {
-      return data;
+  instance.interceptors.response.use((res) => {
+    const { status } = res;
+    if (status >= 200 && status < 300) {
+      return res;
     }
-    return Promise.reject(data);
+    return Promise.reject(res);
   });
 
   export default {
