@@ -53,7 +53,7 @@ interface OutputFileList {
 
 // 默认顶部依赖生成模板
 function defaultTopImportPkgTemplate(config?: Config) {
-  return `import request from '../request'`;
+  return `import request from './request'`;
 }
 
 const getDataKeySetStr = (method: string) => {

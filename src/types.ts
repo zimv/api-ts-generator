@@ -465,17 +465,6 @@ export interface SharedConfig {
   devEnvName?: string;
 
   /**
-   * 生产环境名称。
-   *
-   * **用于获取生产环境域名。**
-   *
-   * 获取方式：打开项目 --> `设置` --> `环境配置` --> 点开或新增生产环境 --> 复制生产环境名称。
-   *
-   * @example 'prod'
-   */
-  prodEnvName?: string;
-
-  /**
    * 输出文件路径。
    *
    * 可以是 `相对路径` 或 `绝对路径`。

@@ -313,14 +313,6 @@ export const fetchProjectInfoById = async function (config: ApiConfig) {
     ...projectInfo,
     cats: projectCats,
     getMockUrl: () => `${serverUrl}/mock/${projectInfo._id}`,
-    getDevUrl: (devEnvName: string) => {
-      const env = projectInfo.env.find(e => e.name === devEnvName);
-      return (env && env.domain) /* istanbul ignore next */ || '';
-    },
-    getProdUrl: (prodEnvName: string) => {
-      const env = projectInfo.env.find(e => e.name === prodEnvName);
-      return (env && env.domain) /* istanbul ignore next */ || '';
-    }
   };
 };
 
@@ -346,14 +338,6 @@ export const fetchProjectInfo = async function (config: ApiConfig) {
     ...projectInfo,
     cats: projectCats,
     getMockUrl: () => `${serverUrl}/mock/${projectInfo._id}`,
-    getDevUrl: (devEnvName: string) => {
-      const env = projectInfo.env.find(e => e.name === devEnvName);
-      return (env && env.domain) /* istanbul ignore next */ || '';
-    },
-    getProdUrl: (prodEnvName: string) => {
-      const env = projectInfo.env.find(e => e.name === prodEnvName);
-      return (env && env.domain) /* istanbul ignore next */ || '';
-    }
   };
 };
 

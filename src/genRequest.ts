@@ -4,7 +4,6 @@ import { dedent } from 'vtils';
 import { Config } from './types';
 import { getOutputFilePath } from './getOutputPath';
 import { formatContent, topNotesContent } from './utils';
-import * as conso from './console';
 
 export default async (config: Config) => {
   const { prettierConfigPath, defaultRequestLib } = config;
@@ -37,10 +36,9 @@ export default async (config: Config) => {
   // 自定义response拦截器，
   // 注意：如果修改接口正常返回的结构，对应的response声明需要修改
   instance.interceptors.response.use((r) => {
-    const { data, config } = r;
-    if (data.code === 0) {
-
-      return data.data;
+    const { data, status } = r;
+    if (status>=200 && status<300) {
+      return data;
     }
     return Promise.reject(data);
   });

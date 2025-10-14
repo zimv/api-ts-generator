@@ -15,7 +15,6 @@ export function defineConfig(config: Partial<Config> | Partial<Config>[]): Confi
       serverUrl: '',
       typesOnly: false,
       target: 'typescript',
-      prodEnvName: 'local',
       outputFilePath: 'src/api',
       dataKey: 'data',
       jsonSchema: {
