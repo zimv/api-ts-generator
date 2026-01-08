@@ -12,13 +12,10 @@ import yargsParser from 'yargs-parser';
 import chalk from 'chalk';
 import * as conso from './console';
 import { formatContent } from './utils';
-import { prepareIndexFile } from './genIndex';
 import { spinnerInstance } from './spinner';
 import { asyncFnArrayOrderRun } from './helpers';
 
 TSNode.register({
-  // 不加载本地的 tsconfig.json
-  // skipProject: true,
   // 仅转译，不做类型检查
   transpileOnly: true,
   // 自定义编译选项
@@ -132,7 +129,6 @@ export async function start() {
     await asyncFnArrayOrderRun(
       config.map((configItem, index) => {
         return async () => {
-          await prepareIndexFile(configItem);
           configItem.configIndex = index;
           await startGenerate(configItem, cwd, index);
         };

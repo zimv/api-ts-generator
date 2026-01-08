@@ -24,3 +24,5 @@
 
 参考开源代码：https://fjc0k.github.io/yapi-to-typescript/handbook/
 
+# tips
+1. 如果有代码格式要求，应该在配置中忽略/api中生成的代码

@@ -13,10 +13,7 @@ export function defineConfig(config: Partial<Config> | Partial<Config>[]): Confi
   const final: Config[] = configs.map(item => {
     return {
       serverUrl: '',
-      typesOnly: false,
-      target: 'typescript',
       outputFilePath: 'src/api',
-      dataKey: 'data',
       jsonSchema: {
         enabled: false
       },

@@ -10,14 +10,10 @@ import { swaggerJsonToYApiData } from './server/swaggerJsonToYApiData';
 import os from 'os';
 import { castArray, cloneDeepFast, dedent, isEmpty, isFunction, noop, pick } from 'vtils';
 import {
-  CategoryList,
   CommentConfig,
   Config,
   ExtendedInterface,
   Interface,
-  InterfaceList,
-  Project,
-  ProjectConfig,
   ServerConfig,
   SyntheticalConfig,
   GeneratorOptions,
@@ -32,9 +28,7 @@ import {
   topNotesContent,
   filterHandler
 } from './utils';
-import GenIndex from './genIndex';
 import { genJsonSchemeConstContent } from './responseDataJsonSchemaHandler';
-import { fetchInterfaceList, fetchProjectInfo, getProjectInfoAndInterfaces } from './requestYapiData';
 import { getOutputFilePath } from './getOutputPath';
 import GenRequest from './genRequest';
 
@@ -52,7 +46,7 @@ interface OutputFileList {
 }
 
 // 默认顶部依赖生成模板
-function defaultTopImportPkgTemplate(config?: Config) {
+function defaultTopImportTemplate(config?: Config) {
   return `import request from './request'`;
 }
 
@@ -62,7 +56,9 @@ const getDataKeySetStr = (method: string) => {
   }
   return 'data';
 };
-// 处理路劲参数
+
+
+// 处理路径参数
 function handlePathParam(path: string) {
   if (path.match(/\{(\w+)\}/)) {
     // eslint-disable-next-line no-template-curly-in-string
@@ -73,7 +69,6 @@ function handlePathParam(path: string) {
 }
 // 默认请求函数体生成模板
 function defaultRequestFunctionTemplate(props: RequestFunctionTemplateProps, config?: SyntheticalConfig): string {
-  const { requestFunctionExtraParams } = config || {};
   const { baseURL, requestFunctionName, requestDataTypeName, responseDataTypeName, extendedInterfaceInfo } = props;
   const { req_params, req_query } = extendedInterfaceInfo;
   const hasData = req_params.length || req_query.length;
@@ -85,41 +80,15 @@ function defaultRequestFunctionTemplate(props: RequestFunctionTemplateProps, con
   } else {
     finalBaseUrl = `"${baseURL}"`;
   }
-  return `export const ${requestFunctionName} = (data${hasData ? '' : '?'}: ${requestDataTypeName}${
-    requestFunctionExtraParams ? `,extra?:Record<string,any>` : ''
-  }) => {
+  return `export const ${requestFunctionName} = (data${
+    hasData ? '' : '?'
+  }: ${requestDataTypeName}${`,extra?:Record<string,any>`}) => {
     return request.${method}<${requestDataTypeName},${responseDataTypeName}>(${handlePathParam(
     extendedInterfaceInfo.path
   )}, {
       ${getDataKeySetStr(method)},
       ${baseURL ? `baseURL: ${finalBaseUrl},` : ''}
-      ${requestFunctionExtraParams ? `...extra` : ''}
-    })
-  }`;
-}
-
-// 后台统一网关函数体生成模板
-function adminRequestFunctionTemplate(props: RequestFunctionTemplateProps, config?: SyntheticalConfig): string {
-  const { baseURL, requestFunctionName, requestDataTypeName, responseDataTypeName, extendedInterfaceInfo } = props;
-  const { req_params, req_query } = extendedInterfaceInfo;
-  const hasData = req_params.length || req_query.length;
-  let finalBaseUrl = '';
-  if (baseURL?.match(/^\[code\]:/)) {
-    // 如果使用[code]开头则表示，作为代码段执行，否则仅作为字符串
-    finalBaseUrl = baseURL.replace(/^\[code\]:/, '');
-  } else {
-    finalBaseUrl = `"${baseURL}"`;
-  }
-
-  const url = config?.proxyInterface?.path || '/proxy';
-
-  return `export const ${requestFunctionName} = (data${hasData ? '' : '?'}: ${requestDataTypeName}) => {
-    return request.post<${requestDataTypeName},${responseDataTypeName}>( '${url}', {
-      data:{
-        real_url: '${extendedInterfaceInfo.path}',
-        params: data
-      },
-      ${baseURL ? `baseURL: ${finalBaseUrl}` : ''}
+      ${`...extra`}
     })
   }`;
 }
@@ -149,7 +118,7 @@ export class Generator {
   async generate(): Promise<OutputFileList> {
     const outputFileList: OutputFileList = Object.create(null);
 
-    const { project, serverUrl, preproccessInterface, outputFilePath, filter, configIndex, name } = this.config;
+    const { serverUrl, configIndex, name } = this.config;
     const typesName = name || '_types_' + (configIndex + 1);
     const openApiV3Json = await this.getOpenApiV3Json(serverUrl);
 
@@ -178,7 +147,6 @@ export class Generator {
       const { code, responseDataJsonSchema } = await this.generateInterfaceCode(
         {
           ...this.config,
-          ...project,
           components: openApiV3Json.components
         },
         interfaceInfo
@@ -195,10 +163,7 @@ export class Generator {
         categoryId: typesName,
         syntheticalConfig: this.config,
         content: categoryCode,
-        outputResponseDataJsonSchemaFilePath: getOutputFilePath(
-          this.config,
-          `/${typesName}/responseDataJsonSchema.ts`
-        ),
+        outputResponseDataJsonSchemaFilePath: getOutputFilePath(this.config, `/${typesName}/responseDataJsonSchema.ts`),
         responseDataJsonSchemaContent: categoryResponseDataJsonSchemaContent,
         requestFunctionFilePath: this.config.requestFunctionFilePath
           ? path.resolve(this.options.cwd, this.config.requestFunctionFilePath)
@@ -229,8 +194,6 @@ export class Generator {
 
     // 生成 request.ts
     await GenRequest(config);
-    // 生成入口 index.ts
-    await GenIndex(config, projects);
     let outputContent = '';
 
     return Promise.all(
@@ -249,31 +212,19 @@ export class Generator {
         requestFunctionFilePath = requestFunctionFilePath.replace(/\.js(x)?$/, '.ts$1');
         requestHookMakerFilePath = requestHookMakerFilePath.replace(/\.js(x)?$/, '.ts$1');
 
-        const topImportPkgTemplate = syntheticalConfig.topImportPkgTemplate || defaultTopImportPkgTemplate;
+        const topImportTemplate = syntheticalConfig.topImportTemplate || defaultTopImportTemplate;
 
         // 始终写入主文件
         const rawOutputContent = dedent`
           ${topNotesContent()}
-          ${topImportPkgTemplate(config)}
+          ${topImportTemplate(config)}
 
           ${content.join('\n\n').trim()}
         `;
 
-        outputContent += formatContent(dedent`${rawOutputContent}`, config.prettierConfigPath);
+        outputContent += formatContent(dedent`${rawOutputContent}`);
         if (Object.keys(outputFileList).length - 1 === index) {
           await fs.outputFile(outputFilePath, outputContent);
-        }
-
-        // 如果要生成 JavaScript 代码，
-        // 则先对主文件进行 tsc 编译，主文件引用到的其他文件也会被编译，
-        // 然后，删除原始的 .tsx? 文件。
-        if (syntheticalConfig.target === 'javascript') {
-          await this.tsc(outputFilePath);
-          await Promise.all([
-            fs.remove(requestFunctionFilePath).catch(noop),
-            fs.remove(requestHookMakerFilePath).catch(noop),
-            fs.remove(outputFilePath).catch(noop)
-          ]);
         }
       })
     );
@@ -331,7 +282,7 @@ export class Generator {
     if (interfaceInfo.path.includes('/path')) {
       console.log(requestDataType);
     }
-    const responseDataJsonSchema = getResponseDataJsonSchema(extendedInterfaceInfo, syntheticalConfig.dataKey);
+    const responseDataJsonSchema = getResponseDataJsonSchema(extendedInterfaceInfo);
     // console.log(JSON.stringify(responseDataJsonSchema));
     const responseDataType = await jsonSchemaToTsCode(
       { ...responseDataJsonSchema, components: syntheticalConfig.components },
@@ -419,22 +370,14 @@ export class Generator {
             *
           `
         : '';
-      const extraComment: string = summary
-        .filter(item => typeof item !== 'boolean' && !isEmpty(item.value))
-        .map(item => {
-          const _item: Exclude<typeof summary[0], boolean> = item as any;
-          return `* @${_item.label} ${castArray(_item.value).join(', ')}`;
-        })
-        .join('\n');
+
       return dedent`
         /**
          ${[titleComment].filter(Boolean).join('\n')}
          */
       `;
     };
-    const requestFunctionTemplate =
-      syntheticalConfig.requestFunctionTemplate ||
-      (syntheticalConfig.proxyInterface ? adminRequestFunctionTemplate : defaultRequestFunctionTemplate);
+    const requestFunctionTemplate = defaultRequestFunctionTemplate;
     const baseURL = syntheticalConfig.baseURL;
     let baseUrl;
     try {
@@ -455,24 +398,19 @@ export class Generator {
       ${genComment(title => `${title} 响应数据`)}
       ${responseDataType.trim()}
 
-      ${
-        syntheticalConfig.typesOnly
-          ? ''
-          : dedent`
-            ${genComment(title => `${title}`)}
-            ${requestFunctionTemplate(
-              {
-                baseURL: baseUrl,
-                requestFunctionName,
-                requestDataTypeName,
-                responseDataTypeName,
-                extendedInterfaceInfo
-              },
-              syntheticalConfig
-            )}
-
-          `
-      }
+      ${dedent`
+          ${genComment(title => `${title}`)}
+          ${requestFunctionTemplate(
+            {
+              baseURL: baseUrl,
+              requestFunctionName,
+              requestDataTypeName,
+              responseDataTypeName,
+              extendedInterfaceInfo
+            },
+            syntheticalConfig
+          )}
+        `}
     `;
 
     return {

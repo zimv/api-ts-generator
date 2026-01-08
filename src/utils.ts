@@ -229,27 +229,18 @@ export function propDefinitionsToJsonSchema(propDefinitions: PropDefinitions): J
  * 获取prettier配置
  * @returns
  */
-export function getPrettier(filePath?: string): prettier.Options {
-  // 从项目中获取prettier配置文件
-  const configPath = prettier.resolveConfigFile.sync((filePath && path.resolve(filePath)) || process.cwd());
-  const config = (configPath && prettier.resolveConfig.sync(configPath)) || {};
-  return config
-    ? {
-        parser: 'babel-ts', // 默认使用babel-ts避免报错：No Parser and no filepath given,using 'babel' the parser....
-        ...config
-      }
-    : {
-        printWidth: 120,
-        tabWidth: 2,
-        singleQuote: true,
-        semi: true,
-        trailingComma: 'all',
-        bracketSpacing: false,
-        endOfLine: 'lf',
-        parser: 'babel-ts'
-      };
+export function getPrettier(): prettier.Options {
+  return {
+    printWidth: 120,
+    tabWidth: 2,
+    singleQuote: true,
+    semi: true,
+    trailingComma: 'all',
+    bracketSpacing: false,
+    endOfLine: 'lf',
+    parser: 'babel-ts'
+  };
 }
-
 
 // 预处理函数，处理空enum和其他边界情况
 export function preprocessSchema(schema: JSONSchema4): JSONSchema4 {
@@ -486,7 +477,7 @@ export function getRequestDataJsonSchema(interfaceInfo: Interface): JSONSchema4 
   return jsonSchema;
 }
 
-export function getResponseDataJsonSchema(interfaceInfo: Interface, dataKey?: string): JSONSchema4 {
+export function getResponseDataJsonSchema(interfaceInfo: Interface): JSONSchema4 {
   let jsonSchema: JSONSchema4 = {};
 
   switch (interfaceInfo.res_body_type) {
@@ -500,11 +491,6 @@ export function getResponseDataJsonSchema(interfaceInfo: Interface, dataKey?: st
     default:
       jsonSchema = { __is_any__: true };
       break;
-  }
-
-  /* istanbul ignore if */
-  if (dataKey && jsonSchema && jsonSchema.properties && jsonSchema.properties[dataKey]) {
-    jsonSchema = jsonSchema.properties[dataKey];
   }
 
   return jsonSchema;
@@ -534,9 +520,9 @@ export function sortByWeights<T extends { weights: number[] }>(list: T[]): T[] {
  * @returns
  * https://prettier.io/docs/en/options.html
  */
-export function formatContent(content: string, prettierConfigPath?: string): string {
+export function formatContent(content: string): string {
   // 从项目中获取prettier配置文件
-  const config = getPrettier(prettierConfigPath);
+  const config = getPrettier();
   const prettyOutputContent = prettier.format(content, config);
 
   return prettyOutputContent;

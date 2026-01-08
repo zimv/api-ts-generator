@@ -8,11 +8,8 @@ export type requestFunctionTemplateType = (props: RequestFunctionTemplateProps, 
 
 /** 顶部依赖生成模板函数 */
 /** 生成器参数 */
-export type topImportPkgTemplateType = () => string;
-export interface GenTemplateType {
-  requestFunctionTemplate?: requestFunctionTemplateType;
-  topImportPkgTemplate?: topImportPkgTemplateType;
-}
+export type topImportTemplateType = () => string;
+
 export interface GeneratorOptions {
   cwd: string;
 }
@@ -439,32 +436,6 @@ export interface CommentConfig {
  */
 export interface SharedConfig {
   /**
-   * 要生成的目标代码类型。
-   * 默认为 `typescript`，若设为 `javascript`，会将生成的 `.ts` 文件转换为 `.js` + `.d.ts` 文件并删除原 `.ts` 文件。
-   *
-   * @default 'typescript'
-   */
-  target?: 'typescript' | 'javascript';
-
-  /**
-   * 是否只生成接口请求内容和返回内容的 TypeSript 类型，是则请求文件和请求函数都不会生成。
-   *
-   * @default false
-   */
-  typesOnly?: boolean;
-
-  /**
-   * 测试环境名称。
-   *
-   * **用于获取测试环境域名。**
-   *
-   * 获取方式：打开项目 --> `设置` --> `环境配置` --> 点开或新增测试环境 --> 复制测试环境名称。
-   *
-   * @example 'dev'
-   */
-  devEnvName?: string;
-
-  /**
    * 输出文件路径。
    *
    * 可以是 `相对路径` 或 `绝对路径`。
@@ -483,19 +454,6 @@ export interface SharedConfig {
   requestFunctionFilePath?: string;
 
   /**
-   * 如果接口响应的结果是 `JSON` 对象，
-   * 且我们想要的数据在该对象下，
-   * 那我们就可将 `dataKey` 设为我们想要的数据对应的键。
-   *
-   * 比如该对象为 `{ code: 0, msg: '成功', data: 100 }`，
-   * 我们想要的数据为 `100`，
-   * 则我们可将 `dataKey` 设为 `data`。
-   *
-   * @example 'data'
-   */
-  dataKey?: string;
-
-  /**
    * 支持生成 React Hooks 代码的相关配置。
    */
   reactHooks?: ReactHooksConfig;
@@ -509,22 +467,6 @@ export interface SharedConfig {
    * 支持生成注释的相关配置。
    */
   comment?: CommentConfig;
-
-  /**
-   * 预处理接口信息，返回新的接口信息。可返回 false 排除当前接口。
-   *
-   * 譬如你想对接口的 `path` 进行某些处理或者想排除某些接口，就可使用该方法。
-   *
-   * @example
-   *
-   * ```js
-   * interfaceInfo => {
-   *   interfaceInfo.path = interfaceInfo.path.replace('v1', 'v2')
-   *   return interfaceInfo
-   * }
-   * ```
-   */
-  preproccessInterface?(interfaceInfo: Interface, changeCase: ChangeCase): Interface | false;
 
   /**
    * 获取请求函数的名称。
@@ -558,89 +500,9 @@ export interface SharedConfig {
 }
 
 /**
- * 分类的配置。
- */
-export interface CategoryConfig extends SharedConfig {
-  /**
-   * 分类 ID。
-   *
-   * 获取方式：打开项目 --> 点开分类 --> 复制浏览器地址栏 `/api/cat_` 后面的数字。
-   *
-   * @example 20
-   */
-  id: number;
-  /**
-   * 过滤接口
-   */
-  filter?: ((path: string, id?: number) => boolean) | RegExp | string[];
-}
-
-export interface TokenNeed {
-  /**
-   * 项目id，与token等效，二选一
-   *
-   * 获取方式：打开项目 --> `设置` --> `项目配置` --> 项目ID。
-   *
-   * @example '123'
-   */
-  projectId?: number;
-  /**
-   * 项目的token，与projectId等效，二选一
-   *
-   * 获取方式：打开项目 --> `设置` --> `token配置` --> 复制 token。
-   *
-   * @example 'e02a47122259d0c1973a9ff81cabb30685d64abc72f39edaa1ac6b6a792a647d'
-   */
-  token: string;
-}
-export interface ProjectIdNeed {
-  /**
-   * 项目id，与token等效，二选一
-   *
-   * 获取方式：打开项目 --> `设置` --> `项目配置` --> 项目ID。
-   *
-   * @example '123'
-   */
-  projectId: number;
-  /**
-   * 项目的token，与projectId等效，二选一
-   *
-   * 获取方式：打开项目 --> `设置` --> `token配置` --> 复制 token。
-   *
-   * @example 'e02a47122259d0c1973a9ff81cabb30685d64abc72f39edaa1ac6b6a792a647d'
-   */
-  token?: string;
-}
-
-/**
- * 项目的配置。
- */
-export type ProjectConfig = SharedConfig &
-  (ProjectIdNeed | TokenNeed) & {
-    /**
-   * 设置接口的baseURL
-   *
-   * @description 若要配置使用运行时代码，则增加`[code]:`前缀
-   ```
-   例：
-    baseURL: "[code]:process.env.BASE_URL"  => baseURL:process.env.BASE_URL
-
-    baseURL: "process.env.BASE_URL" => baseURL:"process.env.BASE_URL"
-   ```
-   */
-    baseURL?: ((path: string) => string | undefined) | string;
-
-    /**
-     * 分类列表。
-     */
-    categories?: CategoryConfig[];
-  };
-
-
-/**
  * 服务器的配置。
  */
-export interface ServerConfig extends SharedConfig, GenTemplateType {
+export interface ServerConfig extends SharedConfig {
   name?: string;
   configIndex?: number;
   /**
@@ -650,31 +512,6 @@ export interface ServerConfig extends SharedConfig, GenTemplateType {
   serverUrl: string;
 
   /**
-   * 项目列表。
-   */
-  project?: ProjectConfig;
-  /**
-   * prettier代码格式化配置文件的路径
-   *
-   * @default process.cwd()
-   */
-  prettierConfigPath?: string;
-  /**
-   * 是否使用默认请求库，关闭后不再生成request.ts
-   */
-  defaultRequestLib?: boolean;
-  /**
-   * 代理请求模式，所有请求均请求到指定接口
-   */
-  proxyInterface?: {
-    /**
-     * 代理接口
-     *
-     * @default /admin-interface/proxy/v0/proxy
-     */
-    path?: string;
-  };
-  /**
    * 设置接口的baseURL
    *
    * @description 若要配置使用运行时代码，则增加`[code]:`前缀
@@ -682,42 +519,27 @@ export interface ServerConfig extends SharedConfig, GenTemplateType {
    例：
     baseURL: "[code]:process.env.BASE_URL"  => baseURL:process.env.BASE_URL
 
-    baseURL: "process.env.BASE_URL" => baseURL:"process.env.BASE_URL"
+    baseURL: "http://localhost:3000" => baseURL:"http://localhost:3000"
    ```
    */
   baseURL?: ((path: string) => string | undefined) | string;
   /**
-   * 过滤接口
+   * 在每个生成的api文件顶部定义一段代码
+   * 例如：引入自定义request函数
+   * default: import request from './request'
    */
-  filter?: ((path: string, id?: number) => boolean) | RegExp | string[];
+  topImportTemplate?: topImportTemplateType;
   /**
-   * yapi页面链接地址列表
-   * 通过url分析出项目id，接口id，分类id
-   *
-   @example
-   ```
-    `/project/9/interface/api/43 => 项目id:9、接口id: 43`
-   ```
+   * 是否使用默认请求库，关闭后不再生成request.ts
    */
-  yapiUrlList?: string | string[];
-  /**
-   * 请求函数是否需要extra入参
-   *
-   * @default false
-   */
-  requestFunctionExtraParams?: boolean;
+  defaultRequestLib?: boolean;
 }
 
 /** 混合的配置。 */
 export type SyntheticalConfig = Partial<
-  ServerConfig &
-    ProjectConfig &
-    CategoryConfig & {
-      mockUrl: string;
-      devUrl: string;
-      prodUrl: string;
-      components: OpenAPIV3.Document['components'];
-    }
+  ServerConfig & {
+    components: OpenAPIV3.Document['components'];
+  }
 >;
 
 /** 配置。 */
@@ -727,21 +549,11 @@ export type Config = ServerConfig;
  * 请求配置。
  */
 export interface RequestConfig<
-  MockUrl extends string = string,
-  DevUrl extends string = string,
-  ProdUrl extends string = string,
   Path extends string = string,
-  DataKey extends string | undefined = string | undefined,
   ParamName extends string = string,
   QueryName extends string = string,
   RequestDataOptional extends boolean = boolean
 > {
-  /** 接口 Mock 地址，结尾无 `/` */
-  mockUrl: MockUrl;
-  /** 接口测试环境地址，结尾无 `/` */
-  devUrl: DevUrl;
-  /** 接口生产环境地址，结尾无 `/` */
-  prodUrl: ProdUrl;
   /** 接口路径，以 `/` 开头 */
   path: Path;
   /** 请求方法 */
@@ -752,8 +564,6 @@ export interface RequestConfig<
   requestBodyType: RequestBodyType;
   /** 返回数据类型 */
   responseBodyType: ResponseBodyType;
-  /** 数据所在键 */
-  dataKey: DataKey;
   /** 路径参数的名称列表 */
   paramNames: ParamName[];
   /** 查询参数的名称列表 */

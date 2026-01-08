@@ -20,7 +20,6 @@ export async function prepareIndexFile(config: Config) {
 }
 
 export default async (config: Config, categoryList: { projectId: string }[]) => {
-  const { prettierConfigPath } = config;
   const indexFilePath = getOutputFilePath(config, 'index.ts');
   let originFileContent = '';
 
@@ -44,7 +43,7 @@ export default async (config: Config, categoryList: { projectId: string }[]) => 
   fs.appendFile(
     indexFilePath,
 
-    formatContent(dedent`${content}`, prettierConfigPath)
+    formatContent(dedent`${content}`)
   );
 };
 
@@ -77,7 +76,6 @@ export const getIndexGitInfo = (config: Config): GetIndexGitInfoResult => {
   return result;
 };
 export const genGitRepoIndex = async (config: Config, filePathList: string[], notes?: string) => {
-  const { prettierConfigPath } = config;
   const indexFilePath = getOutputFilePath(config, 'index.ts');
   let originFileContent = '';
 
@@ -109,6 +107,6 @@ export const genGitRepoIndex = async (config: Config, filePathList: string[], no
   fs.appendFile(
     indexFilePath,
 
-    formatContent(dedent`${content}`, prettierConfigPath)
+    formatContent(dedent`${content}`)
   );
 };

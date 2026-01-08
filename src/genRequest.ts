@@ -6,14 +6,12 @@ import { getOutputFilePath } from './getOutputPath';
 import { formatContent, topNotesContent } from './utils';
 
 export default async (config: Config) => {
-  const { prettierConfigPath, defaultRequestLib } = config;
+  const { defaultRequestLib } = config;
   if (defaultRequestLib === false) return;
   const rawRequestFunctionFilePath = getOutputFilePath(config, 'request.ts');
-  if (!config.typesOnly) {
-    if (await fs.pathExists(rawRequestFunctionFilePath)) {
-      // conso.tips(`输出目录${outputFilePath}下检测到已有request.ts，如果需要重新生成，请删除该文件 \n`);
-      return;
-    }
+  if (await fs.pathExists(rawRequestFunctionFilePath)) {
+    // conso.tips(`输出目录${outputFilePath}下检测到已有request.ts，如果需要重新生成，请删除该文件 \n`);
+    return;
   }
 
   const content = `
@@ -49,9 +47,21 @@ export default async (config: Config) => {
     },
     post: <RQ, RP>(url: string, config?: AxiosRequestConfig) => {
       return instance.post<RP>(url, config);
-    }
+    },
+    head: <RQ, RP>(url: string, config?: AxiosRequestConfig) => {
+      return instance.head<RP>(url, config);
+    },
+    put: <RQ, RP>(url: string, config?: AxiosRequestConfig) => {
+      return instance.put<RP>(url, config);
+    },
+    patch: <RQ, RP>(url: string, config?: AxiosRequestConfig) => {
+      return instance.patch<RP>(url, config);
+    },
+    delete: <RQ, RP>(url: string, config?: AxiosRequestConfig) => {
+      return instance.delete<RP>(url, config);
+    },
   };
 `;
 
-  fs.outputFile(rawRequestFunctionFilePath, formatContent(dedent`${content}`, prettierConfigPath));
+  fs.outputFile(rawRequestFunctionFilePath, formatContent(dedent`${content}`));
 };
