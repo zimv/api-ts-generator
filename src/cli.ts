@@ -85,7 +85,7 @@ export async function genConfig() {
   await fs.outputFile(
     configTSFile,
     formatContent(dedent`
-      import { defineConfig } from 'api-ts-generator'
+      import { defineConfig } from 'open-api-typescript-request-generator'
 
       export default defineConfig([{
         serverUrl: '${swaggerAnswers?.url || ''}',
