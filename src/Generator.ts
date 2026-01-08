@@ -8,13 +8,13 @@ import got from 'got';
 import { OpenAPIV2, OpenAPIV3 } from 'openapi-types';
 import { swaggerJsonToYApiData } from './server/swaggerJsonToYApiData';
 import os from 'os';
-import { castArray, cloneDeepFast, dedent, isEmpty, isFunction, noop, pick } from 'vtils';
+import { dedent, isFunction } from 'vtils';
 import {
   CommentConfig,
   Config,
   ExtendedInterface,
   Interface,
-  ServerConfig,
+  ApiConfig,
   SyntheticalConfig,
   GeneratorOptions,
   RequestFunctionTemplateProps
@@ -25,8 +25,7 @@ import {
   getResponseDataJsonSchema,
   jsonSchemaToTsCode,
   formatContent,
-  topNotesContent,
-  filterHandler
+  topNotesContent
 } from './utils';
 import { genJsonSchemeConstContent } from './responseDataJsonSchemaHandler';
 import { getOutputFilePath } from './getOutputPath';
@@ -56,7 +55,6 @@ const getDataKeySetStr = (method: string) => {
   }
   return 'data';
 };
-
 
 // 处理路径参数
 function handlePathParam(path: string) {
@@ -95,7 +93,7 @@ function defaultRequestFunctionTemplate(props: RequestFunctionTemplateProps, con
 
 export class Generator {
   /** 配置 */
-  private config: ServerConfig;
+  private config: ApiConfig;
 
   private disposes: Array<() => any> = [];
 
@@ -165,9 +163,7 @@ export class Generator {
         content: categoryCode,
         outputResponseDataJsonSchemaFilePath: getOutputFilePath(this.config, `/${typesName}/responseDataJsonSchema.ts`),
         responseDataJsonSchemaContent: categoryResponseDataJsonSchemaContent,
-        requestFunctionFilePath: this.config.requestFunctionFilePath
-          ? path.resolve(this.options.cwd, this.config.requestFunctionFilePath)
-          : path.join(path.dirname(catOutputFilePath), 'request.ts'),
+        requestFunctionFilePath: path.join(path.dirname(catOutputFilePath), 'request.ts'),
         requestHookMakerFilePath: ''
       };
     }
@@ -261,17 +257,11 @@ export class Generator {
       ...interfaceInfo,
       parsedPath: path.parse(interfaceInfo.path)
     };
-    const requestFunctionName = isFunction(syntheticalConfig.getRequestFunctionName)
-      ? await syntheticalConfig.getRequestFunctionName(extendedInterfaceInfo, changeCase)
-      : this.requestFunctionNameGen(extendedInterfaceInfo);
+    const requestFunctionName = this.requestFunctionNameGen(extendedInterfaceInfo);
     const requestConfigName = changeCase.camelCase(`${requestFunctionName}RequestConfig`);
     const requestConfigTypeName = changeCase.pascalCase(requestConfigName);
-    const requestDataTypeName = isFunction(syntheticalConfig.getRequestDataTypeName)
-      ? await syntheticalConfig.getRequestDataTypeName(extendedInterfaceInfo, changeCase)
-      : changeCase.pascalCase(`${requestFunctionName}Request`);
-    const responseDataTypeName = isFunction(syntheticalConfig.getResponseDataTypeName)
-      ? await syntheticalConfig.getResponseDataTypeName(extendedInterfaceInfo, changeCase)
-      : changeCase.pascalCase(`${requestFunctionName}Response`);
+    const requestDataTypeName = changeCase.pascalCase(`${requestFunctionName}Request`);
+    const responseDataTypeName = changeCase.pascalCase(`${requestFunctionName}Response`);
     const requestDataJsonSchema = getRequestDataJsonSchema(extendedInterfaceInfo);
     // 入参
 
@@ -291,24 +281,6 @@ export class Generator {
     if (interfaceInfo.path.includes('/path')) {
       console.log(requestDataType);
     }
-    const isRequestDataOptional = /(\{\}|any)$/s.test(requestDataType);
-    const requestHookName =
-      syntheticalConfig.reactHooks && syntheticalConfig.reactHooks.enabled
-        ? isFunction(syntheticalConfig.reactHooks.getRequestHookName)
-          ? /* istanbul ignore next */
-            await syntheticalConfig.reactHooks.getRequestHookName(extendedInterfaceInfo, changeCase)
-          : `use${changeCase.pascalCase(requestFunctionName)}`
-        : '';
-
-    // 支持路径参数
-    const paramNames = (extendedInterfaceInfo.req_params /* istanbul ignore next */ || []).map(item => item.name);
-    const paramNamesLiteral = JSON.stringify(paramNames);
-    const paramNameType = paramNames.length === 0 ? 'string' : `'${paramNames.join("' | '")}'`;
-
-    // 支持查询参数
-    const queryNames = (extendedInterfaceInfo.req_query /* istanbul ignore next */ || []).map(item => item.name);
-    const queryNamesLiteral = JSON.stringify(queryNames);
-    const queryNameType = queryNames.length === 0 ? 'string' : `'${queryNames.join("' | '")}'`;
 
     // 接口注释
     const genComment = (genTitle: (title: string) => string) => {
@@ -321,7 +293,6 @@ export class Generator {
         updateTime: hasUpdateTime = true,
         link: hasLink = true
       } = {
-        ...syntheticalConfig.comment,
         // Swagger 时总是禁用标签、更新时间、链接
         tag: false,
         updateTime: false,

@@ -331,32 +331,6 @@ export interface ExtendedInterface extends Interface {
 /** 分类列表，对应数据导出的 json 内容 */
 export type CategoryList = Category[];
 
-/** 支持生成 React Hooks 代码的相关配置 */
-export interface ReactHooksConfig {
-  /**
-   * 是否开启该项功能。
-   */
-  enabled: boolean;
-
-  /**
-   * 请求 Hook 函数制造者文件路径。
-   *
-   * @default 与 `outputFilePath` 同级目录下的 `makeRequestHook.ts` 文件
-   * @example 'src/api/makeRequestHook.ts'
-   */
-  requestHookMakerFilePath?: string;
-
-  /**
-   * 获取请求 Hook 的名称。
-   *
-   * @default `use${changeCase.pascalCase(requestFunctionName)}`
-   * @param interfaceInfo 接口信息
-   * @param changeCase 常用的大小写转换函数集合对象
-   * @returns 请求 Hook 的名称
-   */
-  getRequestHookName?(interfaceInfo: ExtendedInterface, changeCase: ChangeCase): string;
-}
-
 /** 支持生成 JSON Schema 的相关配置 */
 export interface JsonSchemaConfig {
   /**
@@ -454,11 +428,6 @@ export interface SharedConfig {
   requestFunctionFilePath?: string;
 
   /**
-   * 支持生成 React Hooks 代码的相关配置。
-   */
-  reactHooks?: ReactHooksConfig;
-
-  /**
    * 支持生成 JSON Schema 的相关配置。
    */
   // jsonSchema?: JsonSchemaConfig;
@@ -502,15 +471,24 @@ export interface SharedConfig {
 /**
  * 服务器的配置。
  */
-export interface ServerConfig extends SharedConfig {
-  name?: string;
+export interface ApiConfig {
+  name: string;
   configIndex?: number;
   /**
-   * 服务地址。若服务类型为 `yapi`，此处填其首页地址；若服务类型为 `swagger`，此处填其 json 地址。
+   * 服务地址。此处填其 swagger json 地址。
+   * 比如nestjs项目一般为http://localhost:3041/api-json
    *
    */
   serverUrl: string;
-
+  /**
+   * 输出文件路径。
+   *
+   * 可以是 `相对路径` 或 `绝对路径`。
+   *
+   * @example 'src/api/index.ts'
+   */
+  // outputFilePath?: string | ((interfaceInfo: Interface, changeCase: ChangeCase) => string);
+  outputFilePath?: string;
   /**
    * 设置接口的baseURL
    *
@@ -537,13 +515,13 @@ export interface ServerConfig extends SharedConfig {
 
 /** 混合的配置。 */
 export type SyntheticalConfig = Partial<
-  ServerConfig & {
+  ApiConfig & {
     components: OpenAPIV3.Document['components'];
   }
 >;
 
 /** 配置。 */
-export type Config = ServerConfig;
+export type Config = ApiConfig;
 
 /**
  * 请求配置。

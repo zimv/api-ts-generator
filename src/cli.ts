@@ -34,9 +34,6 @@ TSNode.register({
     lib: ['es2017']
   }
 });
-interface OptionsType {
-  configFile?: string;
-}
 
 export async function getConfig() {
   const cwd = process.cwd();
@@ -69,8 +66,14 @@ export async function genConfig() {
     if (!answers.override) return;
   }
 
-  let swaggerAnswers;
-  swaggerAnswers = await prompt([
+  let configAnswers;
+  configAnswers = await prompt([
+    {
+      message: '接口文件路径名称',
+      name: 'name',
+      type: 'text',
+      initial: ''
+    },
     {
       message: '接口信息服务地址',
       name: 'url',
@@ -85,8 +88,12 @@ export async function genConfig() {
       import { defineConfig } from 'open-api-typescript-request-generator'
 
       export default defineConfig([{
-        serverUrl: '${swaggerAnswers?.url || ''}',
-        outputFilePath: 'src/api'
+        name: '${configAnswers?.name || ''}',
+        serverUrl: '${configAnswers?.url || ''}',
+        outputFilePath: 'src/api',
+        baseURL: '[code]:process.env.BASE_API_URL',
+        topImportTemplate: () => "${`import request from './request'`}",
+        defaultRequestLib: true,
       }])
     `)
   );
@@ -113,7 +120,7 @@ async function startGenerate(config: Config, cwd: string, index = 0) {
   return true;
 }
 
-export async function start() {
+export async function start(options: { name?: string } = {}) {
   const timeLabel = chalk.green('总耗时');
   console.time(timeLabel);
   const { cwd, configFileExist, configFile, configTSFile } = await getConfig();
@@ -125,9 +132,17 @@ export async function start() {
   try {
     const config: Config[] = require(configFile).default;
 
+    let configToRun = config;
+    if (options.name) {
+      configToRun = config.filter(c => c.name === options.name);
+      if (configToRun.length === 0) {
+        return conso.error(`未找到 name 为 ${options.name} 的配置`);
+      }
+    }
+
     spinnerInstance.start('正在获取数据并生成代码... \n');
     await asyncFnArrayOrderRun(
-      config.map((configItem, index) => {
+      configToRun.map((configItem, index) => {
         return async () => {
           configItem.configIndex = index;
           await startGenerate(configItem, cwd, index);
@@ -174,19 +189,25 @@ export default class CLI {
       .command<any>(
         'gen',
         '生成接口类型声明和方法',
-        y => {},
+        y => {
+          y.option('name', {
+            alias: 'n',
+            type: 'string',
+            description: '只生成指定 name 的配置'
+          });
+        },
         (argv: any) => {
-          const {} = argv;
-          start();
+          const { name } = argv;
+          start({ name });
         }
       )
       .command<any>(
         'init',
         '生成配置文件',
         y => {},
-        (argv: any) => {
+        async (argv: any) => {
           const {} = argv;
-          genConfig();
+          await genConfig();
         }
       )
       .help();

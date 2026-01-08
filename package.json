@@ -1,6 +1,6 @@
 {
   "name": "open-api-typescript-request-generator",
-  "version": "0.0.1-alpha.2",
+  "version": "0.0.2",
   "author": "zimv <zimudashiren@163.com>",
   "main": "./lib/index.js",
   "module": "./es/index.js",
@@ -15,7 +15,8 @@
   "scripts": {
     "build": "father build",
     "gen": "rm -rf ./api & tsx test/gen.ts --type-check false gen",
-    "init": "tsx watch test/gen.ts --type-check false init",
+    "gen:api-1": "tsx test/gen.ts --type-check false gen -n api-1",
+    "init": "tsx test/gen.ts --type-check false init",
     "publishOnly": "npm run build",
     "release": "npm run build && standard-version && git push --follow-tags origin master && npm publish",
     "requestTest": "tsx watch test/requestTest.ts --type-check false",

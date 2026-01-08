@@ -540,23 +540,3 @@ export function topNotesContent(): string {
 
   `;
 }
-
-/**
- * filter处理函数
- * @param interfaceFilter
- * @returns
- */
-export const filterHandler = (interfaceFilter?: Config['filter']) => {
-  return (path: string, id?: number) => {
-    if (interfaceFilter instanceof RegExp && !interfaceFilter.test(path)) {
-      return false;
-    }
-    if (interfaceFilter instanceof Array && !interfaceFilter.includes(path)) {
-      return false;
-    }
-    if (interfaceFilter instanceof Function && !interfaceFilter(path, id)) {
-      return false;
-    }
-    return true;
-  };
-};
