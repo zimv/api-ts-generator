@@ -1,21 +1,21 @@
 # open-api-typescript-request-generator
 
-基于 openapi 规范，生成接口的 request、response 类型声明和请求方法体
+Based on the OpenAPI specification, generate request and response type declarations and request method bodies for APIs
 
-## 安装
+## Installation
 
 `npm install open-api-typescript-request-generator`
 
-## 初始化生成配置文件
+## Initialize Configuration File
 
 `apits-gener init`
 
 
-## 生成接口
+## Generate APIs
 
 `apits-gener gen`
 
-## 只生成指定 name 的配置
+## Generate Only Specified Name Configuration
 
 ```bash
 apits-gener gen --name=test
@@ -23,5 +23,5 @@ apits-gener gen --name=test
 apits-gener gen -n test
 ```
 
-# tips
-1. 如果有代码格式要求，应该在配置中忽略/api中生成的代码
+# Tips
+1. If you have code formatting requirements, you should ignore the generated code in /api in your configuration

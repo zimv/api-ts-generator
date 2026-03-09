@@ -1,6 +1,6 @@
 {
   "name": "open-api-typescript-request-generator",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "author": "zimv <zimudashiren@163.com>",
   "main": "./lib/index.js",
   "module": "./es/index.js",

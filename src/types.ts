@@ -6,134 +6,134 @@ import { ParsedPath } from 'path';
 
 export type requestFunctionTemplateType = (props: RequestFunctionTemplateProps, config?: SyntheticalConfig) => string;
 
-/** 顶部依赖生成模板函数 */
-/** 生成器参数 */
+/** Top dependency generation template function */
+/** Generator parameters */
 export type topImportTemplateType = () => string;
 
 export interface GeneratorOptions {
   cwd: string;
 }
 
-/** 项目信息 */
+/** Project information */
 export interface Project {
   /** ID */
   _id: number;
-  /** 名称 */
+  /** Name */
   name: string;
-  /** 描述 */
+  /** Description */
   desc: string;
-  /** 基本路径 */
+  /** Base path */
   basepath: string;
-  /** 标签 */
+  /** Tags */
   tag: string[];
-  /** 环境配置 */
+  /** Environment configuration */
   env: Array<{
-    /** 环境名称 */
+    /** Environment name */
     name: string;
-    /** 环境域名 */
+    /** Environment domain */
     domain: string;
   }>;
-  /** 项目token */
+  /** Project token */
   token?: string;
-  /** 项目下分类列表 */
+  /** Category list under the project */
   cat: Category[];
   components?: object[];
 }
 
-/** 接口定义 */
+/** Interface definition */
 export interface Interface {
-  /** 接口 ID */
+  /** Interface ID */
   _id: number;
-  /** 所属分类信息（由 YTT 自行实现） */
+  /** Category information (implemented by YTT) */
   _category: OmitStrict<Category, 'list'>;
-  /** 所属项目信息（由 YTT 自行实现） */
+  /** Project information (implemented by YTT) */
   _project: Project;
-  /** 接口名称 */
+  /** Interface name */
   title: string;
-  /** 状态 */
+  /** Status */
   status: LiteralUnion<'done' | 'undone', string>;
-  /** 接口备注 */
+  /** Interface remarks */
   markdown: string;
-  /** 请求路径 */
+  /** Request path */
   path: string;
-  /** 请求方式，HEAD、OPTIONS 处理与 GET 相似，其余处理与 POST 相似 */
+  /** Request method, HEAD and OPTIONS are handled like GET, others like POST */
   method: Method;
-  /** 所属项目 id */
+  /** Project ID */
   project_id: number;
-  /** 所属分类 id */
+  /** Category ID */
   catid: number;
-  /** 标签列表 */
+  /** Tag list */
   tag: string[];
-  /** 请求头 */
+  /** Request headers */
   req_headers: Array<{
-    /** 名称 */
+    /** Name */
     name: string;
-    /** 值 */
+    /** Value */
     value: string;
-    /** 备注 */
+    /** Description */
     desc: string;
-    /** 示例 */
+    /** Example */
     example: string;
-    /** 是否必需 */
+    /** Required */
     required: Required;
   }>;
-  /** 路径参数 */
+  /** Path parameters */
   req_params: Array<{
-    /** 名称 */
+    /** Name */
     name: string;
-    /** 备注 */
+    /** Description */
     desc: string;
-    /** 示例 */
+    /** Example */
     example: string;
-    /** 类型（YApi-X） */
+    /** Type (YApi-X) */
     type?: RequestParamType;
   }>;
-  /** 仅 GET：请求串 */
+  /** GET only: query string */
   req_query: Array<{
-    /** 名称 */
+    /** Name */
     name: string;
-    /** 备注 */
+    /** Description */
     desc: string;
-    /** 示例 */
+    /** Example */
     example: string;
-    /** 是否必需 */
+    /** Required */
     required: Required;
-    /** 类型（YApi-X） */
+    /** Type (YApi-X) */
     type?: RequestQueryType;
   }>;
-  /** 仅 POST：请求内容类型。为 text, file, raw 时不必特殊处理。 */
+  /** POST only: request content type. No special handling needed for text, file, raw. */
   req_body_type: RequestBodyType;
-  /** `req_body_type = json` 时是否为 json schema */
+  /** Whether it is json schema when `req_body_type = json` */
   req_body_is_json_schema: boolean;
-  /** `req_body_type = form` 时的请求内容 */
+  /** Request content when `req_body_type = form` */
   req_body_form: Array<{
-    /** 名称 */
+    /** Name */
     name: string;
-    /** 类型 */
+    /** Type */
     type: RequestFormItemType;
-    /** 备注 */
+    /** Description */
     desc: string;
-    /** 示例 */
+    /** Example */
     example: string;
-    /** 是否必需 */
+    /** Required */
     required: Required;
   }>;
-  /** `req_body_type = json` 时的请求内容 */
+  /** Request content when `req_body_type = json` */
   req_body_other: string;
-  /** 返回数据类型 */
+  /** Response data type */
   res_body_type: ResponseBodyType;
-  /** `res_body_type = json` 时是否为 json schema */
+  /** Whether it is json schema when `res_body_type = json` */
   res_body_is_json_schema: boolean;
-  /** 返回数据 */
+  /** Response data */
   res_body: string;
-  /** 创建时间（unix时间戳） */
+  /** Creation time (unix timestamp) */
   add_time: number;
-  /** 更新时间（unix时间戳） */
+  /** Update time (unix timestamp) */
   up_time: number;
   [key: string]: any;
 }
 
-/**  接口基本信息 */
+/** Interface basic information */
 export interface BaseInterfaceInfo {
   edit_uid: number;
   status: string;
@@ -149,22 +149,22 @@ export interface BaseInterfaceInfo {
   add_time: number;
 }
 
-/** 接口列表 */
+/** Interface list */
 export type InterfaceList = Interface[];
 
-/** 分类信息 */
+/** Category information */
 export interface Category {
   /** ID */
   _id: number;
-  /** 分类名称 */
+  /** Category name */
   name: string;
-  /** 分类备注 */
+  /** Category description */
   desc: string;
-  /** 分类接口列表 */
+  /** Interface list in this category */
   list: InterfaceList;
-  /** 创建时间（unix时间戳） */
+  /** Creation time (unix timestamp) */
   add_time: number;
-  /** 更新时间（unix时间戳） */
+  /** Update time (unix timestamp) */
   up_time: number;
 }
 
@@ -246,7 +246,7 @@ export interface ChangeCase {
   upperCaseFirst: (value: string) => string;
 }
 
-/** 请求方式 */
+/** Request method */
 export enum Method {
   GET = 'GET',
   POST = 'POST',
@@ -257,148 +257,148 @@ export enum Method {
   PATCH = 'PATCH'
 }
 
-/** 是否必需 */
+/** Required */
 export enum Required {
-  /** 不必需 */
+  /** Not required */
   false = '0',
-  /** 必需 */
+  /** Required */
   true = '1'
 }
 
-/** 请求数据类型 */
+/** Request body type */
 export enum RequestBodyType {
-  /** 查询字符串 */
+  /** Query string */
   query = 'query',
-  /** 表单 */
+  /** Form */
   form = 'form',
   /** JSON */
   json = 'json',
-  /** 纯文本 */
+  /** Plain text */
   text = 'text',
-  /** 文件 */
+  /** File */
   file = 'file',
-  /** 原始数据 */
+  /** Raw data */
   raw = 'raw',
-  /** 无请求数据 */
+  /** No request data */
   none = 'none'
 }
 
-/** 请求路径参数类型 */
+/** Request path parameter type */
 export enum RequestParamType {
-  /** 字符串 */
+  /** String */
   string = 'string',
-  /** 数字 */
+  /** Number */
   number = 'number'
 }
 
-/** 请求查询参数类型 */
+/** Request query parameter type */
 export enum RequestQueryType {
-  /** 字符串 */
+  /** String */
   string = 'string',
-  /** 数字 */
+  /** Number */
   number = 'number'
 }
 
-/** 请求表单条目类型 */
+/** Request form item type */
 export enum RequestFormItemType {
-  /** 纯文本 */
+  /** Plain text */
   text = 'text',
-  /** 文件 */
+  /** File */
   file = 'file'
 }
 
-/** 返回数据类型 */
+/** Response body type */
 export enum ResponseBodyType {
   /** JSON */
   json = 'json',
-  /** 纯文本 */
+  /** Plain text */
   text = 'text',
   /** XML */
   xml = 'xml',
-  /** 原始数据 */
+  /** Raw data */
   raw = 'raw'
 
-  // yapi 实际上返回的是 json，有另外的字段指示其是否是 json schema
+  // yapi actually returns json, with another field indicating whether it is json schema
   /** JSON Schema */
   // jsonSchema = 'json-schema',
 }
 
-/** 扩展接口定义 */
+/** Extended interface definition */
 export interface ExtendedInterface extends Interface {
   parsedPath: ParsedPath;
 }
 
-/** 分类列表，对应数据导出的 json 内容 */
+/** Category list, corresponding to exported json content */
 export type CategoryList = Category[];
 
-/** 支持生成 JSON Schema 的相关配置 */
+/** Configuration for generating JSON Schema */
 export interface JsonSchemaConfig {
   /**
-   * 是否开启该项功能。
+   * Whether to enable this feature.
    */
   enabled: boolean;
 
   /**
-   * 是否生成请求数据的 JSON Schema。
+   * Whether to generate JSON Schema for request data.
    *
    * @default true
    */
   // requestData?: boolean;
 
   /**
-   * 是否生成返回数据的 JSON Schema。
+   * Whether to generate JSON Schema for response data.
    *
    * @default true
    */
   // responseData?: boolean;
 }
 
-/** 支持生成注释的相关配置 */
+/** Configuration for generating comments */
 export interface CommentConfig {
   /**
-   * 是否开启该项功能。
+   * Whether to enable this feature.
    *
    * @default true
    */
   enabled?: boolean;
 
   /**
-   * 是否有标题。
+   * Whether to include title.
    *
    * @default true
    */
   title?: boolean;
 
   /**
-   * 是否有分类名称。
+   * Whether to include category name.
    *
    * @default true
    */
   category?: boolean;
 
   /**
-   * 是否有标签。
+   * Whether to include tags.
    *
    * @default true
    */
   tag?: boolean;
 
   /**
-   * 是否有请求头。
+   * Whether to include request headers.
    *
    * @default true
    */
   requestHeader?: boolean;
 
   /**
-   * 是否有更新时间。
+   * Whether to include update time.
    *
    * @default true
    */
   updateTime?: boolean;
 
   /**
-   * 是否为标题、分类名称添加链接。
+   * Whether to add links to title and category name.
    *
    * @default true
    */
@@ -406,13 +406,13 @@ export interface CommentConfig {
 }
 
 /**
- * 共享的配置。
+ * Shared configuration.
  */
 export interface SharedConfig {
   /**
-   * 输出文件路径。
+   * Output file path.
    *
-   * 可以是 `相对路径` 或 `绝对路径`。
+   * Can be `relative path` or `absolute path`.
    *
    * @example 'src/api/index.ts'
    */
@@ -420,81 +420,81 @@ export interface SharedConfig {
   outputFilePath?: string;
 
   /**
-   * 请求函数文件路径。
+   * Request function file path.
    *
-   * @default 与 `outputFilePath` 同级目录下的 `request.ts` 文件
+   * @default `request.ts` file in the same directory as `outputFilePath`
    * @example 'src/api/request.ts'
    */
   requestFunctionFilePath?: string;
 
   /**
-   * 支持生成 JSON Schema 的相关配置。
+   * Configuration for generating JSON Schema.
    */
   // jsonSchema?: JsonSchemaConfig;
 
   /**
-   * 支持生成注释的相关配置。
+   * Configuration for generating comments.
    */
   comment?: CommentConfig;
 
   /**
-   * 获取请求函数的名称。
+   * Get the name of the request function.
    *
    * @default changeCase.camelCase(interfaceInfo.parsedPath.name)
-   * @param interfaceInfo 接口信息
-   * @param changeCase 常用的大小写转换函数集合对象
-   * @returns 请求函数的名称
+   * @param interfaceInfo Interface information
+   * @param changeCase Collection of common case conversion functions
+   * @returns Name of the request function
    */
   getRequestFunctionName?(interfaceInfo: ExtendedInterface, changeCase: ChangeCase): string;
 
   /**
-   * 获取请求数据类型的名称。
+   * Get the name of the request data type.
    *
    * @default changeCase.pascalCase(`${requestFunctionName}Request`)
-   * @param interfaceInfo 接口信息
-   * @param changeCase 常用的大小写转换函数集合对象
-   * @returns 请求数据类型的名称
+   * @param interfaceInfo Interface information
+   * @param changeCase Collection of common case conversion functions
+   * @returns Name of the request data type
    */
   getRequestDataTypeName?(interfaceInfo: ExtendedInterface, changeCase: ChangeCase): string;
 
   /**
-   * 获取响应数据类型的名称。
+   * Get the name of the response data type.
    *
    * @default changeCase.pascalCase(`${requestFunctionName}Response`)
-   * @param interfaceInfo 接口信息
-   * @param changeCase 常用的大小写转换函数集合对象
-   * @returns 响应数据类型的名称
+   * @param interfaceInfo Interface information
+   * @param changeCase Collection of common case conversion functions
+   * @returns Name of the response data type
    */
   getResponseDataTypeName?(interfaceInfo: ExtendedInterface, changeCase: ChangeCase): string;
 }
 
 /**
- * 服务器的配置。
+ * Server configuration.
  */
 export interface ApiConfig {
   name: string;
   configIndex?: number;
   /**
-   * 服务地址。此处填其 swagger json 地址。
-   * 比如nestjs项目一般为http://localhost:3041/api-json
+   * Server URL. Enter the swagger json address here.
+   * For example, nestjs projects usually use http://localhost:3041/api-json
    *
    */
   serverUrl: string;
   /**
-   * 输出文件路径。
+   * Output file path.
    *
-   * 可以是 `相对路径` 或 `绝对路径`。
+   * Can be `relative path` or `absolute path`.
    *
    * @example 'src/api/index.ts'
    */
   // outputFilePath?: string | ((interfaceInfo: Interface, changeCase: ChangeCase) => string);
   outputFilePath?: string;
   /**
-   * 设置接口的baseURL
+   * Set the baseURL for the interface
    *
-   * @description 若要配置使用运行时代码，则增加`[code]:`前缀
+   * @description To configure runtime code, add the `[code]:` prefix
    ```
-   例：
+   Example:
     baseURL: "[code]:process.env.BASE_URL"  => baseURL:process.env.BASE_URL
 
     baseURL: "http://localhost:3000" => baseURL:"http://localhost:3000"
@@ -502,29 +502,29 @@ export interface ApiConfig {
    */
   baseURL?: ((path: string) => string | undefined) | string;
   /**
-   * 在每个生成的api文件顶部定义一段代码
-   * 例如：引入自定义request函数
+   * Define a code snippet at the top of each generated api file
+   * For example: import custom request function
    * default: import request from './request'
    */
   topImportTemplate?: topImportTemplateType;
   /**
-   * 是否使用默认请求库，关闭后不再生成request.ts
+   * Whether to use the default request library, request.ts will not be generated after disabling, default: true
    */
   defaultRequestLib?: boolean;
 }
 
-/** 混合的配置。 */
+/** Combined configuration. */
 export type SyntheticalConfig = Partial<
   ApiConfig & {
     components: OpenAPIV3.Document['components'];
   }
 >;
 
-/** 配置。 */
+/** Configuration. */
 export type Config = ApiConfig;
 
 /**
- * 请求配置。
+ * Request configuration.
  */
 export interface RequestConfig<
   Path extends string = string,
@@ -532,67 +532,67 @@ export interface RequestConfig<
   QueryName extends string = string,
   RequestDataOptional extends boolean = boolean
 > {
-  /** 接口路径，以 `/` 开头 */
+  /** Interface path, starting with `/` */
   path: Path;
-  /** 请求方法 */
+  /** Request method */
   method: Method;
-  /** 请求头，除了 Content-Type 的所有头 */
+  /** Request headers, all headers except Content-Type */
   requestHeaders: Record<string, string>;
-  /** 请求数据类型 */
+  /** Request body type */
   requestBodyType: RequestBodyType;
-  /** 返回数据类型 */
+  /** Response body type */
   responseBodyType: ResponseBodyType;
-  /** 路径参数的名称列表 */
+  /** List of path parameter names */
   paramNames: ParamName[];
-  /** 查询参数的名称列表 */
+  /** List of query parameter names */
   queryNames: QueryName[];
-  /** 请求数据是否可选 */
+  /** Whether request data is optional */
   requestDataOptional: RequestDataOptional;
-  /** 请求数据的 JSON Schema (仅开启了 JSON Schema 生成时生效) */
+  /** JSON Schema for request data (only effective when JSON Schema generation is enabled) */
   requestDataJsonSchema: JSONSchema4;
-  /** 返回数据的 JSON Schema (仅开启了 JSON Schema 生成时生效) */
+  /** JSON Schema for response data (only effective when JSON Schema generation is enabled) */
   responseDataJsonSchema: JSONSchema4;
-  /** 请求函数名称 */
+  /** Request function name */
   requestFunctionName: string;
 }
 
 /**
- * 请求参数。
+ * Request parameters.
  */
 export interface RequestFunctionParams extends RequestConfig {
-  /** 原始数据 */
+  /** Raw data */
   rawData: Record<string, any>;
-  /** 请求数据，不含文件数据 */
+  /** Request data, excluding file data */
   data: Record<string, any>;
-  /** 是否有文件数据 */
+  /** Whether there is file data */
   hasFileData: boolean;
-  /** 请求文件数据 */
+  /** Request file data */
   fileData: Record<string, any>;
-  /** 所有请求数据，包括 data、fileData */
+  /** All request data, including data and fileData */
   allData: Record<string, any>;
-  /** 获取全部请求数据（包含文件）的 FormData 实例 */
+  /** Get FormData instance for all request data (including files) */
   getFormData: () => FormData;
 }
 
-/** 请求函数的额外参数 */
+/** Additional parameters of the request function */
 export type RequestFunctionRestArgs<T extends Function> = T extends (payload: any, ...args: infer R) => any ? R : never;
 
-/** 属性定义 */
+/** Property definition */
 export interface PropDefinition {
-  /** 属性名称 */
+  /** Property name */
   name: string;
-  /** 是否必需 */
+  /** Required */
   required: boolean;
-  /** 类型 */
+  /** Type */
   type: JSONSchema4['type'];
-  /** 注释 */
+  /** Comment */
   comment: string;
 }
 
-/** 属性定义列表 */
+/** Property definition list */
 export type PropDefinitions = PropDefinition[];
 
-/** 请求函数体生成模板函数 */
+/** Request function body generation template function */
 export interface RequestFunctionTemplateProps {
   baseURL?: string;
   requestFunctionName: string;

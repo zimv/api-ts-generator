@@ -4,9 +4,9 @@ import fs from 'fs-extra';
 import * as conso from './console';
 
 /**
- * 定义配置。
+ * Define configuration.
  *
- * @param config 配置
+ * @param config Configuration
  */
 export function defineConfig(config: Config | Config[]): Config[] {
   const configs = config instanceof Array ? config : [config];
@@ -22,20 +22,20 @@ export function defineConfig(config: Config | Config[]): Config[] {
 
 export class FileData<T = any> {
   /**
-   * 原始文件数据。
+   * Original file data.
    */
   private originalFileData: T;
 
   /**
-   * 选项。
+   * Options.
    */
   private options: AppendOptions | undefined;
 
   /**
-   * 文件数据辅助类，统一网页、小程序等平台的文件上传。
+   * File data helper class, unified file upload for web, mini-program and other platforms.
    *
-   * @param originalFileData 原始文件数据
-   * @param options 若使用内部的 getFormData，则选项会被其使用
+   * @param originalFileData Original file data
+   * @param options If using internal getFormData, options will be used by it
    */
   public constructor(originalFileData: T, options?: AppendOptions) {
     this.originalFileData = originalFileData;
@@ -43,16 +43,16 @@ export class FileData<T = any> {
   }
 
   /**
-   * 获取原始文件数据。
+   * Get original file data.
    *
-   * @returns 原始文件数据
+   * @returns Original file data
    */
   public getOriginalFileData(): T {
     return this.originalFileData;
   }
 
   /**
-   * 获取选项。
+   * Get options.
    */
   public getOptions(): AppendOptions | undefined {
     return this.options;
@@ -60,10 +60,10 @@ export class FileData<T = any> {
 }
 
 /**
- * 解析请求数据，从请求数据中分离出普通数据和文件数据。
+ * Parse request data, separating normal data and file data from request data.
  *
- * @param [requestData] 要解析的请求数据
- * @returns 包含普通数据(data)和文件数据(fileData)的对象，data、fileData 为空对象时，表示没有此类数据
+ * @param [requestData] Request data to parse
+ * @returns Object containing normal data (data) and file data (fileData), when data and fileData are empty objects, it means no such data exists
  */
 export function parseRequestData(requestData?: any): { data: any; fileData: any } {
   const result = {
@@ -88,14 +88,14 @@ export function parseRequestData(requestData?: any): { data: any; fileData: any 
 }
 
 /**
- * 准备要传给请求函数的参数。
+ * Prepare parameters to be passed to the request function.
  */
 export function prepare(requestConfig: RequestConfig, requestData: any): RequestFunctionParams {
   let requestPath: string = requestConfig.path;
   const { data, fileData } = parseRequestData(requestData);
   const dataIsObject = data != null && typeof data === 'object' && !Array.isArray(data);
   if (dataIsObject) {
-    // 替换路径参数
+    // Replace path parameters
     if (Array.isArray(requestConfig.paramNames) && requestConfig.paramNames.length > 0) {
       Object.keys(data).forEach(key => {
         if (requestConfig.paramNames.indexOf(key) >= 0) {
@@ -108,7 +108,7 @@ export function prepare(requestConfig: RequestConfig, requestData: any): Request
       });
     }
 
-    // 追加查询参数到路径上
+    // Append query parameters to path
     let queryString = '';
     if (Array.isArray(requestConfig.queryNames) && requestConfig.queryNames.length > 0) {
       Object.keys(data).forEach(key => {
@@ -125,13 +125,13 @@ export function prepare(requestConfig: RequestConfig, requestData: any): Request
     }
   }
 
-  // 全部数据
+  // All data
   const allData = {
     ...(dataIsObject ? data : {}),
     ...fileData
   };
 
-  // 获取表单数据
+  // Get form data
   const getFormData = () => {
     const useNativeFormData = typeof FormData !== 'undefined';
     const useNodeFormData =
@@ -147,7 +147,7 @@ export function prepare(requestConfig: RequestConfig, requestData: any): Request
       ? eval(`require('form-data')`)
       : undefined;
     if (!UniFormData) {
-      throw new Error('当前环境不支持 FormData');
+      throw new Error('FormData is not supported in the current environment');
     }
     const formData = new UniFormData();
     Object.keys(data).forEach(key => {
@@ -173,7 +173,7 @@ export function prepare(requestConfig: RequestConfig, requestData: any): Request
 }
 
 /**
- * 顺序执行异步函数队列
+ * Execute async function queue sequentially
  * @param fns
  * @param results
  * @returns
@@ -188,7 +188,7 @@ export const asyncFnArrayOrderRun = async <T = any>(fns: (() => Promise<T>)[], r
 };
 
 /**
- * 并发请求队列
+ * Concurrent request queue
  * @param fns
  * @param limit
  * @returns

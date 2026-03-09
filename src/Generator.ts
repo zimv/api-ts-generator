@@ -363,10 +363,10 @@ export class Generator {
     }
 
     const code = dedent`
-      ${genComment(title => `${title} 请求参数`)}
+      ${genComment(title => `${title} request parameters`)}
       ${requestDataType.trim()}
 
-      ${genComment(title => `${title} 响应数据`)}
+      ${genComment(title => `${title} response data`)}
       ${responseDataType.trim()}
 
       ${dedent`
